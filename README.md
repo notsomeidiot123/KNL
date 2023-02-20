@@ -13,6 +13,29 @@ The four "Operating modes" are as follows:
 * Safe RTE: Language should execute in a safe runtime enviornment, with full features, including functions, arguments, full operations, `#include`s, and the Stdlib. The RTE provides more type-saftey, but is still by default weakly-typed
   * NOTE: the `#strong` directive enforces full type saftey, enables "lose-casting," and enforces compatibility checks. be sure to use this for the safest code possible. Pointers in a Safe RTE file are disabled, and the attempt to use them will throw `SYS_SAFE_VIOLATION` error
 * Unsafe: Language should execute in a open enviornment. While Enabling Pointers, and keeping automatic Out-of-scope variable deallocation, Garbage collection is disabled, and all types are enforced as ints by default. This is to allow the language to execute code to the fullest extent, With direct access to memory, with the trade-off of some Safe RTE features, to ensure no carefully-planned pointers are deleted by accident. 
+
+## Dependencies:
+
+### Build:
+
+- make
+- g++
+
+### Run: 
+
+- Compiled program
+- Any shared-object libraries 
+
+## How to use:
+
+To enter Shell mode:
+
+    knl shell
+
+To enter File modes (Safe RTE, Shell Script, etc)
+    
+    knl {file} [-w|-u|-t]
+
 ## Credits
 
 [Notsomeidiot123](https://github.com/notsomeidiot123) - Kimi
