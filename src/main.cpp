@@ -67,7 +67,7 @@ class TokenType{
         STRING,
         // WHITESPACE,
         ARRAY,
-        FUNCTION,
+        // FUNCTION,
         NUMBER,
         COMMENT,
         CONSTANT,
@@ -75,16 +75,16 @@ class TokenType{
     
 };
 string token_type_str[] = {
-    "KEYWORD",
+    "KEYWORD   ",
     "IDENTIFIER",
-    "OPERATOR",
-    "STRING",
+    "OPERATOR  ",
+    "STRING    ",
     // "WHITESPACE",
-    "ARRAY",
-    "FUNCTION",
-    "NUMBER",
-    "COMMENT",
-    "CONSTANT",
+    "ARRAY     ",
+    // "FUNCTION",
+    "NUMBER    ",
+    "COMMENT   ",
+    "CONSTANT  ",
 };
 typedef struct func{
     int type;
@@ -116,6 +116,7 @@ string keywords[]{
     "string",
     "func",
     "label",
+    "module",
     //IO Keywords
     "print",
     "input",
@@ -128,6 +129,7 @@ string keywords[]{
     "for",
     "while",
     "goto",
+    "end",
 };
 
 const string CHARS ="abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUBWXYZ1234567890_";
@@ -277,6 +279,36 @@ namespace KN{
                             }
                             tokens.push_back(token{TokenType::NUMBER, num});
                         }
+                        else if(line[j] == '/'){
+                            if(j >= line.size()){
+                                continue;
+                            }
+                            if(line[j+1] == '*'){
+                                std::cout << "Comment!";
+                                token tok = token{TokenType::COMMENT, ""};
+                                bool searching = true;
+                                while(searching){
+                                    if(j >= line.size()){
+                                        string err = "KNL: Error: Unterminated comment on line " + std::to_string(i) + "\nHERE: "+line;
+                                        errors.push_back(err);
+                                        break;
+                                    }
+                                    if(line[j] == '*'){
+                                        if(line[j+1] == '/'){
+                                            searching = false;
+                                            // break;
+                                        }
+                                    }
+                                    tok.data += line[j];
+                                    
+                                    j++;
+                                    if(searching == false){
+                                        tok.data += line[j];
+                                    }
+                                }
+                                tokens.push_back(tok);
+                            }
+                        }
                         else if(OPERATORS.find(line[j]) != string::npos){
                             token tok = {TokenType::OPERATOR, ""};
                             if(j <= line.size()-1){
@@ -297,6 +329,76 @@ namespace KN{
                             j++;
                             
                         }
+                        else if(CHARS.find(line[j]) != string::npos){
+                            string str = (string)"" + line[j];
+                            while(CHARS.find(line[j] != string::npos && j < line.size())){
+                                str += line[j++];
+                            }
+                            token tok{};
+                            if(keywords->find(str)){
+                                tok.token_type = TokenType::KEYWORD;
+                                tok.data = str;
+                            }
+                            else{
+                                tok.token_type = TokenType::IDENTIFIER;
+                            }
+                            tokens.push_back(tok);
+                        }
+                        else if(line[j] == '{'){
+                            int start = j;
+                            j++;
+                            int type = -1;
+                            vector<token> tmptoks = vector<token>();
+                            while(line[j] != '}'){
+                                if(j >= line.size()){
+                                    string err = "KNL: Error: Unterminated Array Initializer on line " + std::to_string(i) + "\nHERE: "+line;
+                                    errors.push_back(err);
+                                    break;
+                                }
+                                token tmptok = tokenize_const(line.c_str() + j);
+                                if(tmptok.token_type == -1){
+                                    if(tmptok.data == "UNTERM_STRING"){
+                                        string err = "KNL: Error: Unterminated String on line " + std::to_string(i) + "\nHERE: " + line;
+                                        errors.push_back(err);
+                                        break;
+                                    }
+                                }
+                                if(type == -1){
+                                    type = tmptok.token_type;
+                                }
+                                else if(tmptok.token_type != type){
+                                    errors.push_back("KNL: Error: Incompatible types in array initializer on line " + std::to_string(i)
+                                    + "\nHERE: " + line);
+                                }
+                                bool instr = 0;
+                                bool tobreak = 0;
+                                while(!(line[j] == ',' || line[j] == '}') && !instr){
+                                    if(j >= line.size()){
+                                        string err = "KNL: Error: Missing ',' in Array Initializer on line " + std::to_string(i) + "\nHERE: "+line;
+                                        errors.push_back(err);
+                                        break;
+                                    }
+                                    if(j == '"'){
+                                        instr = !instr;
+                                    }
+                                    if(line[j] == '}'){
+                                        tobreak = true;
+                                        continue;
+                                    }
+                                    else{
+                                        j++;
+                                    }
+                                }
+                                if(line[j] == '}'){
+                                    break;
+                                }else{
+                                    j++;
+                                }
+                            }
+                            // for(int k = 0; k < tmptoks.size();k++);
+                            token topush = token{TokenType::ARRAY, line.substr(start, start-j)};
+                            tokens.push_back(topush);
+                        }
                         
                     }
                 }
@@ -310,7 +412,7 @@ namespace KN{
             }
             void debug_print_toks(){
                 for(int i = 0; i < tokens.size(); i++){
-                    std::cout << "{ " << token_type_str[tokens[i].token_type] << " : \"" << tokens[i].data << "\" }\n";
+                    std::cout << "{ " << token_type_str[tokens[i].token_type] << " | " << std::to_string(tokens[i].token_type)<< " : \"" << tokens[i].data << "\" }\n";
                 }
             }
             token tokenize_const(string str){
@@ -328,7 +430,7 @@ namespace KN{
                         j++;
                         while(line[j] != '\"'){
                             if(line[j] == '\n' || j >= line.size()){
-                                return token{-1, ""};
+                                return token{-1, "UNTERM_STRING"};
                             }
                             topush += line[j++];
                         }
@@ -344,7 +446,7 @@ namespace KN{
                         return token{TokenType::NUMBER, num};
                     }
                     else {
-                        return token{-1, 0};
+                        return token{-1, "INV_TOKEN"};
                     }
                 }
                 return token {TokenType::NUMBER, "1"};
