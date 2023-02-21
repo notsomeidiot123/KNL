@@ -1,5 +1,5 @@
 CC=g++
-CFLAGS="-Wno-cpp"
+CFLAGS="-Wno-cpp -ggdb -O0 -p"
 
 TARGET=knl
 
