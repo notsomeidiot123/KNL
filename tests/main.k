@@ -1,8 +1,4 @@
-#strong /*directive & comment*/
-#const constant
-{10, 20} /*array*/
-12 /*number*/
-"string"
-print keyword & /*operator, keyword, and identifier*/
-}
-#const err
+print "Hello, World!"
+num num1 = 1
+num num2 = 3
+print num
