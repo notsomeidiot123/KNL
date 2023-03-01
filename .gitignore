@@ -1,6 +1,8 @@
-knl
+knl*
 *.bin
 *.o
 .replit
 replit*
 .ccls-cache
+tests/tmp*
+tmp*
