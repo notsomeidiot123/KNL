@@ -12,4 +12,4 @@ debug:
 	$(CC) $(CFLAGS-debug) $(DEPS) -o $(TARGET)-debug
 
 clean:
-	$(RM) knl
+	$(RM) knl*

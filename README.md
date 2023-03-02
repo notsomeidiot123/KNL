@@ -10,9 +10,11 @@ The four "Operating modes" are as follows:
 
 * Shell: Behave similar to bash, execute things on a input line-by-line basis, instead of reading from file. 
 * Shell Script: Exactly the same as Shell, but read from a file. This must be specifed by the directive `#shell`, however it must be a trimmed-down version of the language itself. features such as Stdlib, `#includes` and functions are not present, as to allow for faster execution, but allows for labels to be defined, just like you normally can
-* Safe RTE: Language should execute in a safe runtime enviornment, with full features, including functions, arguments, full operations, `#include`s, and the Stdlib. The RTE provides more type-saftey, but is still by default weakly-typed
-  * NOTE: the `#strong` directive enforces full type saftey, enables "lose-casting," and enforces compatibility checks. be sure to use this for the safest code possible. Pointers in a Safe RTE file are disabled, and the attempt to use them will throw `SYS_SAFE_VIOLATION` error
-* Unsafe: Language should execute in a open enviornment. While Enabling Pointers, and keeping automatic Out-of-scope variable deallocation, Garbage collection is disabled, and all types are enforced as ints by default. This is to allow the language to execute code to the fullest extent, With direct access to memory, with the trade-off of some Safe RTE features, to ensure no carefully-planned pointers are deleted by accident. 
+* RTE: Language should execute in a semi-safe runtime enviornment, with full features. The RTE provides more type-saftey, but is still weakly typed. 
+
+NOTE: Sorry about the awful code formatting, Replit's IDE is god-awful, and I've been using it for the majority of this project, as I have been working on it in my free time at school. The auto-formatting is the worst
+format that i've seen, and more than half the time, I have to manually enter 7 tabs just to get to the right indentation level, and I'm kinda lazy.  
+However, I just reformatted the entire thing in VS Code, so, hopefully formatting should be better (And more readable) from now on. Though, to be fair, if you understand the code, I'm honestly impressed, and surprised. Great job :)
 
 ## Dependencies:
 

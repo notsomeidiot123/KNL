@@ -5,15 +5,15 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <time.h>
 #include <string>
+#include <time.h>
 #include <unordered_map>
 #include <vector>
 
 #define ISARR(a) a & 0x80
 
 #ifndef DEBUG
-	#define DEBUG 0
+#define DEBUG 0
 #endif
 
 using std::fstream;
@@ -62,39 +62,39 @@ public:
 class Variable {
 public:
   int type;
-	long long stackPos;
+  long long stackPos;
 };
 class Double : public Variable {
 public:
   double data;
-	Double(int type, double data){
-		this->type = type;
-		this->data = data;
-	}
+  Double(int type, double data) {
+    this->type = type;
+    this->data = data;
+  }
 };
 class String : public Variable {
 public:
   string data;
-	String(int type, string data){
-		this->type = type;
-		this->data = data;
-	}
+  String(int type, string data) {
+    this->type = type;
+    this->data = data;
+  }
 };
 class Array : public Variable {
   void *ptr;
   int length;
-	Array(int type, void *data, int length){
-		this->type = type;
-		this->ptr = data;
-		this->length = length;
-	}
+  Array(int type, void *data, int length) {
+    this->type = type;
+    this->ptr = data;
+    this->length = length;
+  }
 };
 
 class TokenType {
 public:
   enum types {
     KEYWORD,
-		END,
+    END,
     IDENTIFIER,
     OPERATOR,
     STRING,
@@ -107,11 +107,11 @@ public:
   };
 };
 string token_type_str[] = {
-    "KEYWORD", //done
-		"END",
-		"IDENTIFIER",//done
-    "OPERATOR", // done
-    "STRING",   // done
+    "KEYWORD", // done
+    "END",
+    "IDENTIFIER", // done
+    "OPERATOR",   // done
+    "STRING",     // done
     // "WHITESPACE",
     "ARRAY", // done
     // "FUNCTION",
@@ -133,57 +133,58 @@ bool strong = false;
 bool no_warn = false;
 
 vector<string> keywords = {
-    "void", // 0
-    "var",  // 1
+    "void",   // 0
+    "var",    // 1
     "string", // 2
     "func",   // 3
     "label",  // 4
     "module", // 5
     // IO Keywords
     "print", // 6
-    "input", // 7
+    "scan", // 7
     "write", // 8
     "read",  // 9
     // Control keywords
-    "if",    // 10
-    "elif",  // 11
-    "else",  // 12
-    "for",   // 13
-    "while", // 14
-    "goto",  // 15
-    "end",   // 16
-    "then",  // 17
-    "array", // 18
-		"sleep", // 19
-		"return", //20
-		"call", //21
+    "if",     // 10
+    "elif",   // 11
+    "else",   // 12
+    "for",    // 13
+    "while",  // 14
+    "goto",   // 15
+    "end",    // 16
+    "then",   // 17
+    "array",  // 18
+    "sleep",  // 19
+    "return", // 20
+    "call",   // 21
 };
 string keywords_r[] = {
-    "void", // 0
-    "var",  // 1
+    "void",   // 0
+    "var",    // 1
     "string", // 2
     "func",   // 3
     "label",  // 4
     "module", // 5
     // IO Keywords
     "print", // 6
-    "input", // 7
+    "scan", // 7
     "write", // 8
     "read",  // 9
     // Control keywords
-    "if",    // 10
-    "elif",  // 11
-    "else",  // 12
-    "for",   // 13
-    "while", // 14
-    "goto",  // 15
-    "end",   // 16
-    "then",  // 17
-    "array", // 18
-		"sleep", // 19
-		"return", //20
-		"call", //21
-};;
+    "if",     // 10
+    "elif",   // 11
+    "else",   // 12
+    "for",    // 13
+    "while",  // 14
+    "goto",   // 15
+    "end",    // 16
+    "then",   // 17
+    "array",  // 18
+    "sleep",  // 19
+    "return", // 20
+    "call",   // 21
+};
+;
 const string CHARS =
     "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUBWXYZ1234567890_";
 const string NUMS = "1234567890._";
@@ -201,16 +202,16 @@ public:
 };
 class Nums {
 public:
-	static int pow(int n, int exp){
-		if(exp == 0){
-			return 1;
-		}
-		int tmp = n;
-		for(int i = 0; i < exp; i++){
-			tmp *= n;
-		}
-		return tmp;
-	}
+  static int pow(int n, int exp) {
+    if (exp == 0) {
+      return 1;
+    }
+    int tmp = n;
+    for (int i = 0; i < exp; i++) {
+      tmp *= n;
+    }
+    return tmp;
+  }
 };
 class Lang {
 private:
@@ -374,20 +375,19 @@ public:
               tok.data += line[j];
 
               j++;
-							if(j >= line.size()){
-								j = 0;
-								i++;
-							}
+              if (j >= line.size()) {
+                j = 0;
+                i++;
+              }
               if (searching == false) {
                 tok.data += line[j];
               }
             }
             tokens.push_back(tok);
-          }
-					else if(line[j+1] == '/'){
+          } else if (line[j + 1] == '/') {
 
-						break;
-					}
+            break;
+          }
         } else if (OPERATORS.find(line[j]) != string::npos) {
           token tok = {TokenType::OPERATOR, ""};
           tok.data += line[j];
@@ -415,17 +415,15 @@ public:
             string cmp = keywords[k];
             if (keywords[k] == str) {
               found = true;
-							break;
+              break;
             }
           }
           if (found) {
             tok.token_type = TokenType::KEYWORD;
             tok.data = str;
-          }
-					else if(constants.count(str)){
-						tok = tokenize_const(constants[str].data);
-					}
-					else {
+          } else if (constants.count(str)) {
+            tok = tokenize_const(constants[str].data);
+          } else {
             tok.token_type = TokenType::IDENTIFIER;
             tok.data = str;
           }
@@ -488,12 +486,10 @@ public:
           // for(int k = 0; k < tmptoks.size();k++);
           token topush = token{TokenType::ARRAY, line.substr(start, start - j)};
           tokens.push_back(topush);
-        }
-				else if(line[j] == ';'){
-					token tok = token{TokenType::END, ";"};
-					tokens.push_back(tok);
-				}
-				else {
+        } else if (line[j] == ';') {
+          token tok = token{TokenType::END, ";"};
+          tokens.push_back(tok);
+        } else {
           if (line[j] != ' ')
             errors.push_back((string) "KNL: Error: Unexpected token \'" +
                              line[j] + "\' on line " + std::to_string(i + 1) +
@@ -574,57 +570,56 @@ public:
     }
     return token{TokenType::NUMBER, "1"};
   }
-	//runner and runner functions
-	
-	
-	void sleep(int ticks){
-		int r = ticks * 10000;
-		for(int i = 0; i < r; i++);
-	}
-	long long *heap;
-	long long stacklimit;
-	int sp;
-	int bp;
-	int memsize;
-	int runinit(int memsize){
-		this->memsize = memsize;
-		stacklimit = (memsize * 3)/4;
-		heap = (long long*) malloc(memsize);
-		return heap != nullptr;
-	}
-	void push(int value){
-		if(unsafe){
-			heap[(sp++) % memsize] = value;
-		}
-		else{
-			if(sp >= memsize){
-				std::cout << "Error: Stack Call exceeds memory limit!\n";
-				exit(-1);
-			}
-			if(sp >= stacklimit){
-				std::cout << "Error: Stack Overflow!\n";
-				exit(-1);
-			}
-			heap[sp++] = value;
-		}
-	}
-	long long pop(){
-		if(unsafe){
-			return heap[(--sp) % memsize];
-		}
-		else{
-			sp--;
-			if(sp < 0){
-				std::cout << "Error: Operation on stack attempted with insufficient arguments!\n";
-				exit(-1);
-			}
-			if(sp < bp){
-				std::cout << "Error: Broken stack frame!\n";
-				exit(-1);
-			}
-			return heap[sp];
-		}
-	}
+  // runner and runner functions
+
+  void sleep(int ticks) {
+    int r = ticks * 10000;
+    for (int i = 0; i < r; i++)
+      ;
+  }
+  long long *heap;
+  long long stacklimit;
+  int sp;
+  int bp;
+  int memsize;
+  int runinit(int memsize) {
+    this->memsize = memsize;
+    stacklimit = (memsize * 3) / 4;
+    heap = (long long *)malloc(memsize);
+    return heap != nullptr;
+  }
+  void push(int value) {
+    if (unsafe) {
+      heap[(sp++) % memsize] = value;
+    } else {
+      if (sp >= memsize) {
+        std::cout << "Error: Stack Call exceeds memory limit!\n";
+        exit(-1);
+      }
+      if (sp >= stacklimit) {
+        std::cout << "Error: Stack Overflow!\n";
+        exit(-1);
+      }
+      heap[sp++] = value;
+    }
+  }
+  long long pop() {
+    if (unsafe) {
+      return heap[(--sp) % memsize];
+    } else {
+      sp--;
+      if (sp < 0) {
+        std::cout << "Error: Operation on stack attempted with insufficient "
+                     "arguments!\n";
+        exit(-1);
+      }
+      if (sp < bp) {
+        std::cout << "Error: Broken stack frame!\n";
+        exit(-1);
+      }
+      return heap[sp];
+    }
+  }
   void preprocess() {
     for (int i = 0; i < tokens.size(); i++) {
       if (tokens[i].token_type == TokenType::KEYWORD &&
@@ -635,19 +630,19 @@ public:
                        "TokenType::IDENTIFIER\n";
         }
 
-        Variable* intt = new Variable();
+        Variable *intt = new Variable();
         intt->type = VarType::LABEL;
         intt->stackPos = sp;
-				push(i);
+        push(i);
         vars[0][tokens[i].data] = intt;
       }
     }
   }
   Variable *get_var(string varname) {
     for (int i = scope_num; i >= 0; i--) {
-			if(i < 0){
-				break;
-			}
+      if (i < 0) {
+        break;
+      }
       if (vars[i].count(varname)) {
         return vars[i][varname];
       }
@@ -655,156 +650,153 @@ public:
     return new Variable{-1};
   }
 
-	void set(int pos){
-		//WARNING! POPS FROM STACK
-		heap[pos] = pop();
-	}
-	long long get(int pos){
-		return heap[pos];
-	}
-	
-	int eval(vector<token> expr){
-		Variable *left_side = nullptr;
-		Variable *right_side = nullptr;
-		bool return_char = false;
-		bool is_string = false;
-		//                          012345678901234
-		//const string OPERATORS = "+-*/%&|^!~@$><=:";
-		for(int i = 0; i < expr.size(); i++){
-			if(expr[i].token_type == TokenType::NUMBER){
-				char *strt = (char *)expr[i].data.c_str();
-				push(strtol(strt, &strt, 0));
-			}
-			else if(expr[i].token_type == TokenType::IDENTIFIER){
-				push(get_var(expr[i].data)->stackPos);
-			}
-			else if(expr[i].token_type == TokenType::OPERATOR){
-				int op = OPERATORS.find(expr[i].data);
-				int oper0 = pop();
-				int oper1 = 0;
-				if(op < 8 || op > 10){
-					oper1 = pop();
-				}
-				switch(op){
-					case 0:  //add
-						push(oper1 + oper0);
-						break;
-					case 1: //sub
-						push(oper0 - oper1);
-						break;
-					case 2:
-						push(oper0 * oper1);
-						break;
-					case 3:
-						if(oper1 == 0){
-							std::cout << "Error: Division by zero!\n";
-							exit(-1);
-						}
-						push(oper0/oper1);
-						break;
-					case 4:
-						if(oper1 == 0){
-							std::cout << "Error: Division by zero!\n";
-							exit(-1);
-						}
-						push(oper0 % oper1);
-						break;
-					case 5:
-						push(oper0 & oper1);
-						break;
-					case 6:
-						push(oper0 | oper1);
-						break;
-					case 7:
-						push(oper0 ^ oper1);
-						break;
-					case 8:
-						push(!oper0);
-						break;
-					case 9:
-						push(~oper0);
-						break;
-					case 10:
-						// std::cout << ""
-						push(heap[oper0]);
-						break;
-					case 11:
-						heap[oper0] = oper1;
-						break;
-					case 12:
-						push(oper0 > oper1);
-						break;
-					case 13:
-						push(oper0 < oper1);
-						break;
-					case 14:
-						push(oper0 == oper1);
-						break;
-					case 15:
-						push(oper0);
-						push(oper1);
-						push(oper1);
-					break;
-				}
-			}
-		}
-		// std::cout << pop();
-		return 0;
-	}
+  void set(int pos) {
+    // WARNING! POPS FROM STACK
+    heap[pos] = pop();
+  }
+  long long get(int pos) { return heap[pos]; }
+
+  int eval(vector<token> expr) {
+    Variable *left_side = nullptr;
+    Variable *right_side = nullptr;
+    bool return_char = false;
+    bool is_string = false;
+    //                          012345678901234
+    // const string OPERATORS = "+-*/%&|^!~@$><=:";
+    for (int i = 0; i < expr.size(); i++) {
+      if (expr[i].token_type == TokenType::NUMBER) {
+        char *strt = (char *)expr[i].data.c_str();
+        push(strtol(strt, &strt, 0));
+      } else if (expr[i].token_type == TokenType::IDENTIFIER) {
+        push(get_var(expr[i].data)->stackPos);
+      } else if (expr[i].token_type == TokenType::OPERATOR) {
+        int op = OPERATORS.find(expr[i].data);
+        int oper0 = pop();
+        int oper1 = 0;
+        if (op < 8 || op > 10) {
+          oper1 = pop();
+        }
+        switch (op) {
+        case 0: // add
+          push(oper1 + oper0);
+          break;
+        case 1: // sub
+          push(oper0 - oper1);
+          break;
+        case 2:
+          push(oper0 * oper1);
+          break;
+        case 3:
+          if (oper1 == 0) {
+            std::cout << "Error: Division by zero!\n";
+            exit(-1);
+          }
+          push(oper0 / oper1);
+          break;
+        case 4:
+          if (oper1 == 0) {
+            std::cout << "Error: Division by zero!\n";
+            exit(-1);
+          }
+          push(oper0 % oper1);
+          break;
+        case 5:
+          push(oper0 & oper1);
+          break;
+        case 6:
+          push(oper0 | oper1);
+          break;
+        case 7:
+          push(oper0 ^ oper1);
+          break;
+        case 8:
+          push(!oper0);
+          break;
+        case 9:
+          push(~oper0);
+          break;
+        case 10:
+          // std::cout << ""
+          push(heap[oper0]);
+          break;
+        case 11:
+          heap[oper0] = oper1;
+          break;
+        case 12:
+          push(oper0 > oper1);
+          break;
+        case 13:
+          push(oper0 < oper1);
+          break;
+        case 14:
+          push(oper0 == oper1);
+          break;
+        case 15:
+          push(oper0);
+          push(oper1);
+          push(oper1);
+          break;
+        }
+      }
+    }
+    // std::cout << pop();
+    return 0;
+  }
   void run() {
     for (int i = 0; i < tokens.size(); i++) {
       if (tokens[i].token_type == TokenType::COMMENT) {
         continue;
-      }
-			else if(tokens[i].token_type == TokenType::NUMBER){
-				vector<token> expr = vector<token>();
-				while(tokens[i].token_type != TokenType::END){
-					if(tokens[i].token_type == TokenType::END){
-						break;
-						//I KNOW ALL OF THIS IS REDUNDANT BUT IDK WHY IT DOESNT WORK WITHOUT IT
-					}
-					if(i > tokens.size()){
-						std::cout << "Error: Expected END Type token (;) after expression!\n";
-						exit(-1);
-					}
-					expr.push_back(tokens[i++]);
-				}
-				i--;
-				eval(expr);
-			}
-			else if(tokens[i].token_type == TokenType::OPERATOR){
-				vector<token> expr = vector<token>();
-				while(tokens[i].token_type != TokenType::END){
-					if(tokens[i].token_type == TokenType::END){
-						break;
-						//I KNOW ALL OF THIS IS REDUNDANT BUT IDK WHY IT DOESNT WORK WITHOUT IT
-					}
-					if(i > tokens.size()){
-						std::cout << "Error: Expected END Type token (;) after expression!\n";
-						exit(-1);
-					}
-					expr.push_back(tokens[i++]);
-				}
-				i--;
-				eval(expr);
-			}
-			else if(tokens[i].token_type == TokenType::IDENTIFIER){
-				vector<token> expr = vector<token>();
-				while(tokens[i].token_type != TokenType::END){
-					if(tokens[i].token_type == TokenType::END){
-						break;
-						//I KNOW ALL OF THIS IS REDUNDANT BUT IDK WHY IT DOESNT WORK WITHOUT IT
-					}
-					if(i > tokens.size()){
-						std::cout << "Expected END Type token (;) after expression!\n";
-						exit(-1);
-					}
-					expr.push_back(tokens[i++]);
-				}
-				i--;
-				eval(expr);
-			}
-			else if (tokens[i].token_type == TokenType::KEYWORD) {
+      } else if (tokens[i].token_type == TokenType::NUMBER) {
+        vector<token> expr = vector<token>();
+        while (tokens[i].token_type != TokenType::END) {
+          if (tokens[i].token_type == TokenType::END) {
+            break;
+            // I KNOW ALL OF THIS IS REDUNDANT BUT IDK WHY IT DOESNT WORK
+            // WITHOUT IT
+          }
+          if (i > tokens.size()) {
+            std::cout
+                << "Error: Expected END Type token (;) after expression!\n";
+            exit(-1);
+          }
+          expr.push_back(tokens[i++]);
+        }
+        i--;
+        eval(expr);
+      } else if (tokens[i].token_type == TokenType::OPERATOR) {
+        vector<token> expr = vector<token>();
+        while (tokens[i].token_type != TokenType::END) {
+          if (tokens[i].token_type == TokenType::END) {
+            break;
+            // I KNOW ALL OF THIS IS REDUNDANT BUT IDK WHY IT DOESNT WORK
+            // WITHOUT IT
+          }
+          if (i > tokens.size()) {
+            std::cout
+                << "Error: Expected END Type token (;) after expression!\n";
+            exit(-1);
+          }
+          expr.push_back(tokens[i++]);
+        }
+        i--;
+        eval(expr);
+      } else if (tokens[i].token_type == TokenType::IDENTIFIER) {
+        vector<token> expr = vector<token>();
+        while (tokens[i].token_type != TokenType::END) {
+          if (tokens[i].token_type == TokenType::END) {
+            break;
+            // I KNOW ALL OF THIS IS REDUNDANT BUT IDK WHY IT DOESNT WORK
+            // WITHOUT IT
+          }
+          if (i > tokens.size()) {
+            std::cout << "Expected END Type token (;) after expression!\n";
+            exit(-1);
+          }
+          expr.push_back(tokens[i++]);
+        }
+        i--;
+        eval(expr);
+      } else if (tokens[i].token_type == TokenType::KEYWORD) {
         if (tokens[i].data == "print") {
           if (i >= tokens.size()) {
             std::cout << "Error: builtin 'print' called at EOF!\n";
@@ -816,121 +808,137 @@ public:
             if (ret->type == -1) {
               std::cout << "Error: Undeclared Identifier '" << tokens[i].data
                         << "'!\n";
-							// data = "Error";
+              // data = "Error";
               exit(-1);
             }
-            if(ret->type == VarType::STRING){
-							data = "string";
-						}
-						else if(ret->type == VarType::INT64){
-							data = std::to_string(heap[ret->stackPos]);
-						}
-						else{
-							// data = "hi";
-							std::cout << "Error!";
-						}
+            if (ret->type == VarType::STRING) {
+              data = "string";
+            } else if (ret->type == VarType::INT64) {
+              data = std::to_string(heap[ret->stackPos]);
+            } else {
+              // data = "hi";
+              std::cout << "Error!";
+            }
           } else if (tokens[i].token_type == TokenType::STRING ||
                      tokens[i].token_type == TokenType::NUMBER) {
             data = tokens[i].data;
+          } else {
+            long long popped = pop();
+            data = std::to_string(popped);
+            push(popped);
           }
-					else{
-						long long popped = pop();
-						data = std::to_string(popped);
-						push(popped);
-					}
           std::cout << data << std::endl;
-        }
-        else if (tokens[i].data == "goto") {
+        } else if (tokens[i].data == "goto") {
           token tmptok = tokens[i + 1];
-					if( tmptok.token_type == TokenType::IDENTIFIER){
-						string label = tmptok.data;
-						Variable *intt = get_var(label);
-						i = heap[intt->stackPos];
-					}
-          else if(tmptok.token_type == TokenType::NUMBER){
-						char *strt = (char *)tmptok.data.c_str();
-						
-						// i = strtol(strt, &strt, 0);
-					}
-        }
-				else if(tokens[i].data == "var"){
-					if( i + 1 > tokens.size()){
-						std::cout << "Error: Expected identifier when declaring variable!\n";
-						exit(-1);
-					}
-					vars[scope_num][tokens[++i].data] = new Variable{VarType::INT64, sp};
-					vector<token>expr = vector<token>();
-					while(tokens[i].token_type != TokenType::END){
-						if(tokens[i].token_type == TokenType::END){
-							break;
-							//I KNOW ALL OF THIS IS REDUNDANT BUT IDK WHY IT DOESNT WORK WITHOUT IT
-						}
-						if(i > tokens.size()){
-							std::cout << "Error: Expected END Type token (;) after expression!\n";
-							exit(-1);
-						}
-						expr.push_back(tokens[i++]);
-					}
-					eval(expr);
-				}
-				else if(tokens[i].data == "sleep"){
-					if(i >= tokens.size()){
-						std::cout << "Error: Sleep keyword without any time!\n";
-						exit(-1);
-					}
+          if (tmptok.token_type == TokenType::IDENTIFIER) {
+            string label = tmptok.data;
+            Variable *intt = get_var(label);
+            i = heap[intt->stackPos];
+          } else if (tmptok.token_type == TokenType::NUMBER) {
+            char *strt = (char *)tmptok.data.c_str();
 
-					if(tokens[++i].token_type == TokenType::NUMBER){
-						char* start = (char *)tokens[i].data.c_str();
-						int time = strtol(start, &start, 0);
-						sleep(time);
-					}
-				}
-				else if(tokens[i].data == "then"){
-					scope_num++;
-					if(scope_num > max_scope){
-						vars.push_back(unordered_map<string, Variable*>());
-						max_scope++;
-					}
-				}
-				else if(tokens[i].data == "end"){
-					scope_num--;
-					vars.pop_back();
-				}
-				else if(tokens[i].data == "if"){
-					if(i >= tokens.size()){
-						std::cout << "Error: Unterminated If Statement!\n";
-						exit(-1);
-					}
-					if(tokens[++i].data != "then" || tokens[i].token_type != TokenType::END){
-						vector<token> expr = vector<token>();
-						while(tokens[i].token_type != TokenType::KEYWORD && tokens[i].data != "then" && tokens[i].token_type != TokenType::END){
-							if(i > tokens.size()){
-								std::cout << "Unterminated If Statement!\n";
-								exit(-1);
-								break;
-							}
-							if(tokens[i].token_type == TokenType::KEYWORD && tokens[i].data == "then" || tokens[i].token_type == TokenType::END){
-								break;
-							}
-							else{
-								// std::cout << tokens[i].data;
-								expr.push_back(tokens[i++]);
-							}
-						}
-						eval(expr);
-						// i--;
-						
-					}
-					i--;
-					int jump = pop();
-					// std::cout << jump << " " << tokens[i].data;
-					if(jump){
-						continue;
-					}
-					else{
-						while(tokens[i].data != "end" && i < tokens.size()) i++;
-					}
-				}
+            // i = strtol(strt, &strt, 0);
+          }
+        } else if (tokens[i].data == "var") {
+          if (i + 1 > tokens.size()) {
+            std::cout
+                << "Error: Expected identifier when declaring variable!\n";
+            exit(-1);
+          }
+          vars[scope_num][tokens[++i].data] = new Variable{VarType::INT64, sp};
+          vector<token> expr = vector<token>();
+          while (tokens[i].token_type != TokenType::END) {
+            if (tokens[i].token_type == TokenType::END) {
+              break;
+              // I KNOW ALL OF THIS IS REDUNDANT BUT IDK WHY IT DOESNT WORK
+              // WITHOUT IT
+            }
+            if (i > tokens.size()) {
+              std::cout
+                  << "Error: Expected END Type token (;) after expression!\n";
+              exit(-1);
+            }
+            expr.push_back(tokens[i++]);
+          }
+          eval(expr);
+        } else if (tokens[i].data == "sleep") {
+          if (i >= tokens.size()) {
+            std::cout << "Error: Sleep keyword without any time!\n";
+            exit(-1);
+          }
+
+          if (tokens[++i].token_type == TokenType::NUMBER) {
+            char *start = (char *)tokens[i].data.c_str();
+            int time = strtol(start, &start, 0);
+            sleep(time);
+          }
+        } else if (tokens[i].data == "then") {
+          scope_num++;
+          if (scope_num > max_scope) {
+            vars.push_back(unordered_map<string, Variable *>());
+            max_scope++;
+          }
+        } else if (tokens[i].data == "end") {
+          scope_num--;
+          vars.pop_back();
+        } else if (tokens[i].data == "if") {
+          if (i >= tokens.size()) {
+            std::cout << "Error: Unterminated If Statement!\n";
+            exit(-1);
+          }
+          if (tokens[++i].data != "then" ||
+              tokens[i].token_type != TokenType::END) {
+            vector<token> expr = vector<token>();
+            while (tokens[i].token_type != TokenType::KEYWORD &&
+                   tokens[i].data != "then" &&
+                   tokens[i].token_type != TokenType::END) {
+              if (i > tokens.size()) {
+                std::cout << "Unterminated If Statement!\n";
+                exit(-1);
+                break;
+              }
+              if (tokens[i].token_type == TokenType::KEYWORD &&
+                      tokens[i].data == "then" ||
+                  tokens[i].token_type == TokenType::END) {
+                break;
+              } else {
+                // std::cout << tokens[i].data;
+                expr.push_back(tokens[i++]);
+              }
+            }
+            eval(expr);
+            // i--;
+          }
+          i--;
+          int jump = pop();
+          // std::cout << jump << " " << tokens[i].data;
+          if (jump) {
+            continue;
+          } else {
+            while (tokens[i].data != "end" && i < tokens.size())
+              i++;
+          }
+        }
+        else if(tokens[i].data == "scan"){
+          std::cout << "SCANF:" << std::endl;
+          char *str = (char *)malloc(4096);
+          scanf("%s", str);
+          string input = str;
+          if(i + 1 > tokens.size()){
+            std::cout << "Warning: Scan and EOF!\n";
+          }
+          else{
+            i++;
+            if(tokens[i].token_type == TokenType::IDENTIFIER){
+              //remember, when implementing arrays to check for overlap!!!
+              Variable *v = get_var(tokens[i].data);
+              if(v->type == VarType::INT64){
+                memcpy(heap+heap[v->stackPos], str, input.size()+1);
+              }
+            }
+          }
+          free(str);
+        }
       }
     }
   }
@@ -943,7 +951,7 @@ int main(int argc, char **argv) {
     std::cout << "KNL: No Input File Specified!\n";
   } else {
     KN::Lang *runner = new KN::Lang();
-		int initmem = 0x400;
+    int initmem = 0x400;
     for (int i = 1; i < argc; i++) {
       string arg = argv[i];
       if (arg == "-u") {
@@ -952,33 +960,36 @@ int main(int argc, char **argv) {
         no_warn = true;
       } else if (arg == "-t") {
         strong = true;
-      } else if (arg == "-m"){
-				char * ret = (char *)malloc(512);
-				initmem = strtol(argv[++i], &ret, 0);
-			} else {
+      } else if (arg == "-m") {
+        char *ret = (char *)malloc(512);
+        initmem = strtol(argv[++i], &ret, 0);
+      } else {
         runner->add_file(arg);
       }
     }
     runner->read_files();
     runner->tokenize();
-		if(DEBUG) runner->debug_print_toks();
-		if(!runner->runinit(initmem)){
-			std::cout << "Error initializing memory!\n";
-			exit(-1);
-		}
+    if (DEBUG)
+      runner->debug_print_toks();
+    if (!runner->runinit(initmem)) {
+      std::cout << "Error initializing memory!\n";
+      exit(-1);
+    }
     runner->preprocess();
-		if(initmem < 0x400){
-			std::cout << "Specified heap size less than minimum. Defaulting to 0x400 (1K)\n";
-			initmem = 0x400;
-		}
-		
+    if (initmem < 0x400) {
+      std::cout << "Specified heap size less than minimum. Defaulting to 0x400 "
+                   "(1K)\n";
+      initmem = 0x400;
+    }
+
     runner->run();
-		if(DEBUG){
-			std::cout << "End of program! Unwinding stack!\n";
-			while(runner->sp > runner->bp){
-				std::cout << "SP:" << runner->sp-1 << "| DATA: " << runner->pop() << std::endl;
-			}
-		}
+    if (DEBUG) {
+      std::cout << "End of program! Unwinding stack!\n";
+      while (runner->sp > runner->bp) {
+        std::cout << "SP:" << runner->sp - 1 << "| DATA: " << runner->pop()
+                  << std::endl;
+      }
+    }
     // std::cout << "KEYWORD: ";
     // for(int i= 0; i < 20; i++){
     // 	std::cout << keywords[i] << " DATA: ";
