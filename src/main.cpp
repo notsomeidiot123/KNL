@@ -9,11 +9,17 @@
 #include <time.h>
 #include <unordered_map>
 #include <vector>
-
+#include <unistd.h>
+#include <stdint.h>
 #define ISARR(a) a & 0x80
 
+
+
 #ifndef DEBUG
-#define DEBUG 0
+	#define VERSION "KNL v0.1.0-alpha"
+	#define DEBUG 0
+#else
+	#define VERSION "KNL v0.1.0-debug_alpha"
 #endif
 
 using std::fstream;
@@ -41,6 +47,16 @@ public:
     STRING,
     LABEL,
   };
+	
+};
+string strrep[] = {
+	"VOID",
+	"NUMBER",
+	"UNSIGNED",
+	"DOUBLE",
+	"CHAR",
+	"STRING",
+	"LABEL"
 };
 // ARRAYS ARE VARIABLE TYPE & 0x80
 
@@ -62,7 +78,7 @@ public:
 class Variable {
 public:
   int type;
-  long long stackPos;
+  int64_t stackPos;
 };
 class Double : public Variable {
 public:
@@ -121,7 +137,7 @@ string token_type_str[] = {
 };
 typedef struct func {
   int type;
-  long long token_offset;
+  int64_t token_offset;
 } function;
 typedef struct tok {
   int token_type;
@@ -131,6 +147,7 @@ typedef struct tok {
 bool unsafe = false;
 bool strong = false;
 bool no_warn = false;
+bool no_warn_string = false;
 
 vector<string> keywords = {
     "void",   // 0
@@ -161,6 +178,7 @@ vector<string> keywords = {
 string keywords_r[] = {
     "void",   // 0
     "var",    // 1
+		"char",
     "string", // 2
     "func",   // 3
     "label",  // 4
@@ -184,10 +202,11 @@ string keywords_r[] = {
     "return", // 20
     "call",   // 21
 };
-;
+
 const string CHARS =
     "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUBWXYZ1234567890_";
 const string NUMS = "1234567890._";
+const string HEX = "01234567890abcdef_x";
 const string OPERATORS = "+-*/%&|^!~@$><=:";
 
 namespace KN {
@@ -263,6 +282,43 @@ public:
     for (int i = 0; i < lines.size(); i++) {
       string line = lines[i];
       for (int j = 0; j < line.size(); j++) {
+				if (line[j] == '/') {
+          if (j >= line.size()) {
+            continue;
+          }
+          if (line[j + 1] == '*') {
+            token tok = token{TokenType::COMMENT, ""};
+            bool searching = true;
+            while (searching) {
+              if (i >= lines.size()) {
+                string err = "KNL: Error: Unterminated comment on line " +
+                             std::to_string(i + 1) + "\nHERE: " + line;
+                errors.push_back(err);
+                break;
+              }
+              if (line[j] == '*') {
+                if (line[j + 1] == '/') {
+                  searching = false;
+                  // break;
+                }
+              }
+              tok.data += line[j];
+
+              j++;
+              if (j >= line.size()) {
+                j = 0;
+                i++;
+              }
+              if (searching == false) {
+                tok.data += line[j];
+              }
+            }
+            tokens.push_back(tok);
+          } else if (line[j + 1] == '/') {
+
+            break;
+          }
+        }
         if (line[j] == '\n' || line[j] == '\t') {
           // yes i know it's redundant
           continue;
@@ -346,49 +402,20 @@ public:
           }
         } else if (NUMS.find(line[j]) != string::npos) {
           string num = "";
-          while (NUMS.find(line[j]) != string::npos && j < line.size()) {
-            num += line[j++];
-          }
+          if(line[j] == '0' && line[j+1] == 'x' || line[j+1] == 'X'){
+						while (HEX.find(line[j]) != string::npos && j < line.size() ) {
+            	num += line[j++];
+          	}
+					}
+					else{
+						while (NUMS.find(line[j]) != string::npos && j < line.size()) {
+           		num += line[j++];
+          	}
+					}
           j--;
           // std::cout << num;
           tokens.push_back(token{TokenType::NUMBER, num});
-        } else if (line[j] == '/') {
-          if (j >= line.size()) {
-            continue;
-          }
-          if (line[j + 1] == '*') {
-            token tok = token{TokenType::COMMENT, ""};
-            bool searching = true;
-            while (searching) {
-              if (i >= lines.size()) {
-                string err = "KNL: Error: Unterminated comment on line " +
-                             std::to_string(i + 1) + "\nHERE: " + line;
-                errors.push_back(err);
-                break;
-              }
-              if (line[j] == '*') {
-                if (line[j + 1] == '/') {
-                  searching = false;
-                  // break;
-                }
-              }
-              tok.data += line[j];
-
-              j++;
-              if (j >= line.size()) {
-                j = 0;
-                i++;
-              }
-              if (searching == false) {
-                tok.data += line[j];
-              }
-            }
-            tokens.push_back(tok);
-          } else if (line[j + 1] == '/') {
-
-            break;
-          }
-        } else if (OPERATORS.find(line[j]) != string::npos) {
+        }  else if (OPERATORS.find(line[j]) != string::npos) {
           token tok = {TokenType::OPERATOR, ""};
           tok.data += line[j];
           tokens.push_back(tok);
@@ -537,9 +564,15 @@ public:
       }
       if (NUMS.find(line[j]) != string::npos) {
         string num = "";
-        while (NUMS.find(line[j]) != string::npos && j < str.size()) {
-          num += line[j++];
-        }
+        if(line[j] == '0' && line[j+1] == 'x' || line[j+1] == 'X'){
+						while (HEX.find(line[j]) != string::npos && j < line.size() ) {            	num += line[j++];
+        	}
+				}
+				else{
+					while (NUMS.find(line[j]) != string::npos && j < line.size()) {
+        		num += line[j++];
+         	}
+				}
         return token{TokenType::NUMBER, num};
       }
 
@@ -577,20 +610,20 @@ public:
     for (int i = 0; i < r; i++)
       ;
   }
-  long long *heap;
-  long long stacklimit;
+  int64_t *heap;
+  int64_t stacklimit;
   int sp;
   int bp;
   int memsize;
   int runinit(int memsize) {
     this->memsize = memsize;
     stacklimit = (memsize * 3) / 4;
-    heap = (long long *)malloc(memsize);
+    heap = (int64_t *)malloc(memsize);
     return heap != nullptr;
   }
   void push(int value) {
     if (unsafe) {
-      heap[(sp++) % memsize] = value;
+      heap[(sp++)] = value;
     } else {
       if (sp >= memsize) {
         std::cout << "Error: Stack Call exceeds memory limit!\n";
@@ -603,9 +636,9 @@ public:
       heap[sp++] = value;
     }
   }
-  long long pop() {
+  int64_t pop() {
     if (unsafe) {
-      return heap[(--sp) % memsize];
+      return heap[(--sp)];
     } else {
       sp--;
       if (sp < 0) {
@@ -654,21 +687,26 @@ public:
     // WARNING! POPS FROM STACK
     heap[pos] = pop();
   }
-  long long get(int pos) { return heap[pos]; }
+  int64_t get(int pos) { return heap[pos]; }
 
   int eval(vector<token> expr) {
     Variable *left_side = nullptr;
     Variable *right_side = nullptr;
     bool return_char = false;
     bool is_string = false;
-    //                          012345678901234
+    //                           012345678901234
     // const string OPERATORS = "+-*/%&|^!~@$><=:";
     for (int i = 0; i < expr.size(); i++) {
       if (expr[i].token_type == TokenType::NUMBER) {
         char *strt = (char *)expr[i].data.c_str();
         push(strtol(strt, &strt, 0));
       } else if (expr[i].token_type == TokenType::IDENTIFIER) {
-        push(get_var(expr[i].data)->stackPos);
+      	push(get_var(expr[i].data)->stackPos);
+				if(get_var(expr[i].data)->type == VarType::STRING){
+					if(!no_warn && !no_warn_string){
+						std::cout << "Warning: Performing operations on string does not modify!\n";
+					}
+				}
       } else if (expr[i].token_type == TokenType::OPERATOR) {
         int op = OPERATORS.find(expr[i].data);
         int oper0 = pop();
@@ -717,6 +755,7 @@ public:
           break;
         case 10:
           // std::cout << ""
+					// printf("DEBUG: %lx", heap[oper0]);
           push(heap[oper0]);
           break;
         case 11:
@@ -732,9 +771,9 @@ public:
           push(oper0 == oper1);
           break;
         case 15:
+          push(oper1);
           push(oper0);
-          push(oper1);
-          push(oper1);
+					push(oper0);
           break;
         }
       }
@@ -811,8 +850,15 @@ public:
               // data = "Error";
               exit(-1);
             }
-            if (ret->type == VarType::STRING) {
-              data = "string";
+            if (ret->type == VarType::STRING || ISARR(ret->type)) {
+							int pos = heap[ret->stackPos];
+							std::cout << pos << " ";
+							do{
+								printf("%c", (char)((heap[pos++])));
+								// std::cout << "next: " << heap[pos] << "is zero?" << std::to_string(heap[pos]);
+							}while((heap[pos] != 0));
+							std::cout << pos;
+							// data = "GOOD";
             } else if (ret->type == VarType::INT64) {
               data = std::to_string(heap[ret->stackPos]);
             } else {
@@ -823,7 +869,7 @@ public:
                      tokens[i].token_type == TokenType::NUMBER) {
             data = tokens[i].data;
           } else {
-            long long popped = pop();
+            int64_t popped = pop();
             data = std::to_string(popped);
             push(popped);
           }
@@ -846,22 +892,23 @@ public:
             exit(-1);
           }
           vars[scope_num][tokens[++i].data] = new Variable{VarType::INT64, sp};
-          vector<token> expr = vector<token>();
-          while (tokens[i].token_type != TokenType::END) {
-            if (tokens[i].token_type == TokenType::END) {
-              break;
-              // I KNOW ALL OF THIS IS REDUNDANT BUT IDK WHY IT DOESNT WORK
-              // WITHOUT IT
-            }
-            if (i > tokens.size()) {
-              std::cout
-                  << "Error: Expected END Type token (;) after expression!\n";
-              exit(-1);
-            }
-            expr.push_back(tokens[i++]);
+        } else if (tokens[i].data == "char") {
+          if (i + 1 > tokens.size()) {
+            std::cout
+                << "Error: Expected identifier when declaring variable!\n";
+            exit(-1);
           }
-          eval(expr);
-        } else if (tokens[i].data == "sleep") {
+          vars[scope_num][tokens[++i].data] = new Variable{VarType::CHAR, sp};
+        }else if (tokens[i].data == "array") {
+          if (i + 2 > tokens.size()) {
+            std::cout
+                << "Error: Expected identifier when declaring variable!\n";
+            exit(-1);
+          }
+					int type = 0;
+          vars[scope_num][tokens[++i].data] = new Variable{type | 0x80, sp};
+        }
+				else if (tokens[i].data == "sleep") {
           if (i >= tokens.size()) {
             std::cout << "Error: Sleep keyword without any time!\n";
             exit(-1);
@@ -920,24 +967,38 @@ public:
           }
         }
         else if(tokens[i].data == "scan"){
-          std::cout << "SCANF:" << std::endl;
-          char *str = (char *)malloc(4096);
-          scanf("%s", str);
-          string input = str;
+          // char *str = (char *)malloc(4096);
+					char *str;
+          string input = "";
+					std::cin >> input;
+					str = (char *)input.c_str();
           if(i + 1 > tokens.size()){
-            std::cout << "Warning: Scan and EOF!\n";
+            std::cout << "Warning: Scan at EOF!\n";
           }
           else{
             i++;
             if(tokens[i].token_type == TokenType::IDENTIFIER){
               //remember, when implementing arrays to check for overlap!!!
               Variable *v = get_var(tokens[i].data);
-              if(v->type == VarType::INT64){
-                memcpy(heap+heap[v->stackPos], str, input.size()+1);
-              }
+              // strcpy((char *)((heap+(heap[v->stackPos]))), str);
+							for(int j = 0; j < input.size(); j++){
+								heap[heap[v->stackPos] + j] = input[j];
+							}
+							heap[heap[v->stackPos] + input.size()] = 0;
+							if(!(ISARR(v->type)) && v->type != VarType::STRING){
+								if(!no_warn){
+									std::cout << "Warning: Implicit convserion from type " + strrep[v->type] + " to " + strrep[v->type] + " Array";
+								}
+								v->type = v->type | 0x80;
+								vars[scope_num][tokens[i].data] = v;
+							}
             }
+						else{
+							std::cout << "Error: Not enough arguments in builtin call: scan\n";
+							exit(-1);
+						}
           }
-          free(str);
+          // free(str);
         }
       }
     }
@@ -947,23 +1008,50 @@ public:
 }; // namespace KN
 
 int main(int argc, char **argv) {
+	if(DEBUG){
+		std::cout << "KNL v0.1.0 DEBUG BUILD. USE AT YOUR OWN RISK!\n";
+		std::cout << "PID: " + std::to_string(getpid()) + "\n";
+	}
   if (argc == 1) {
     std::cout << "KNL: No Input File Specified!\n";
   } else {
     KN::Lang *runner = new KN::Lang();
-    int initmem = 0x400;
+    int initmem = 0x400 * sizeof(int64_t);
     for (int i = 1; i < argc; i++) {
       string arg = argv[i];
       if (arg == "-u") {
         unsafe = true;
       } else if (arg == "-w") {
-        no_warn = true;
+        if(i+1 > argc){
+					no_warn = true;
+				}
+				else{
+					i++;
+					string arg1 = argv[i];
+					no_warn = arg1 == "all" ? true : no_warn;
+					no_warn_string = arg1 == "string" ? true : no_warn_string;
+				}
       } else if (arg == "-t") {
         strong = true;
       } else if (arg == "-m") {
+				if(!no_warn){
+					std::cout << "Warning: Memory switch allocates memory in terms of int64 (0x400 will not allocate one kilobyte, but instead 8)";
+				}
         char *ret = (char *)malloc(512);
         initmem = strtol(argv[++i], &ret, 0);
-      } else {
+      } else if(arg == "-h"){
+				std::cout << VERSION << "\n";
+				std::cout << "https://github.com/notsomeidiot123/knl\n";
+				std::cout << "USEAGE (Represented as RegEx): knl ^(\\S+)[\\-m|\\-t|\\-w|\\-u]*";
+				std::cout << "HELP:\n";
+				std::cout << "Anything that does not follow a switch that does not require an immediate value is treated as the file to execute\n";
+				std::cout << "-m:\n\tSpecify amount of memory to be use. KNL allocates this * 8\n";
+				std::cout << "-u:\n\tAllow unsafe code. Not reccomended unless being used in a freestanding enviornment where direct memory access is important\n";
+				std::cout << "-w:\n\tDisable all warnings.\n";
+				std::cout << "-t:\n\tEnforce strong typing (May be removed)\n";
+				exit(-1);
+			}
+			else {
         runner->add_file(arg);
       }
     }
@@ -989,7 +1077,15 @@ int main(int argc, char **argv) {
         std::cout << "SP:" << runner->sp - 1 << "| DATA: " << runner->pop()
                   << std::endl;
       }
+			ofstream dump = ofstream((string)"core" + std::to_string(getpid()) + ".out");
+			char *towrite = (char *)malloc(runner->memsize);
+			memcpy(towrite, runner->heap, runner->memsize);
+			dump.write(towrite, runner->memsize);
     }
+		if(DEBUG){
+			std::cout << "KNL v0.1.0 DEBUG BUILD EXIT\n";
+			std::cout << "PID: " + std::to_string(getpid()) + "\n";
+		}
     // std::cout << "KEYWORD: ";
     // for(int i= 0; i < 20; i++){
     // 	std::cout << keywords[i] << " DATA: ";

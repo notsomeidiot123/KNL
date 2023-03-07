@@ -6,3 +6,6 @@ replit*
 .ccls-cache
 tests/tmp*
 tmp*
+gmon.*
+core*
+*.hd
