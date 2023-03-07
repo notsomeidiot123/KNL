@@ -1,6 +1,6 @@
 CC=g++
 CFLAGS=-Wno-cpp -O0
-CFLAGS-debug=-Wno-cpp -ggdb -O0 -D DEBUG
+CFLAGS-debug=-Wno-cpp -g -O0 -D DEBUG
 TARGET=knl
 
 DEPS=src/main.cpp

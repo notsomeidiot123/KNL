@@ -7,6 +7,7 @@
 [1.2](#12-crash-course-to-rpn) Crash Course to RPN  
 [1.3](#13-your-first-program) Your first program
 [1.4](#14-expressions) Expressions
+[1.5](#15-keywords) Keywords
 ## 1.0: Getting Started
 
 Welcome to KNL! I'm so glad you decided to attempt to learn this awful, awful language.
@@ -153,6 +154,7 @@ Here's the list of all valid operators, and their names.
 |<|Less than|
 |>|Greater than|
 |=|Equal to|
+|:|Dupe|
 
 From those, you may be asking a couple of questions. What is a reader/writer? Why is = the equality operator, and not ==? What about complex
 boolean expressions? Where's && and ||?
@@ -209,4 +211,33 @@ Examples:
 !0 == 1//true
 !!0 == 0//true
 ```
+```knl
+//RPN
+5 !! 1 = //true
+5 ! 1 = // false
+0 !! 0 = //true
+0 ! 0 = //false
+0 ! 1 = //true
+0 !! 0 = //true
+5 ! 0 = //true
+```
 
+Lastly, the `:` (dupe) operator does exactly what it's name says. It duplicates the top of the stack
+so, if, for example, the stack looked like
+
+|P|D|
+|-|-|
+|2|3|
+|1|0|
+|0|9|
+
+and you used the dupe operator, the stack would then look like
+
+|P|D|
+|-|-|
+|3|3|
+|2|3|
+|1|0|
+|0|9|
+
+## 1.5: Keywords

@@ -1,17 +1,26 @@
-var num1;
-
-64 num1 $;
-scan num1;
-var num2;
-
-num1 @ num2 $;
-print ""
-64 @ num2 $;
-print num2;
-print "Printed out again: "
-64 num1 $;
-print num1;
-
+var first;
+var second;
+var i;
+//initialization of variables
+1 first $;
+0 second $;
+0 i $;
+//print the first variable
+print first;
+then
+	label loop; //this is the 26 at the bottom of the stack
+end
+then
+	var tmp;
+	first @ tmp $;
+	first @ second @ +; print;
+	first $;
+	tmp @ second $;
+end
+i @ 1 + i $;
+if i @ 10 > then
+	goto loop;
+end
 
 
 // note to self: scope will keep increaseing every goto.

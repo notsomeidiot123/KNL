@@ -235,8 +235,7 @@ public:
 class Lang {
 private:
   vector<unordered_map<string, Variable *>> vars;
-  int scope_num = 0;
-  int max_scope = 0;
+  
   unordered_map<string, function> funcs;
   unordered_map<string, token> constants;
   vector<string> lines;
@@ -246,6 +245,8 @@ private:
   vector<string> files;
 
 public:
+	int scope_num = 0;
+  int max_scope = 0;
   Lang() {
     vars = vector<unordered_map<string, Variable *>>();
     vars.push_back(unordered_map<string, Variable *>());
@@ -711,7 +712,7 @@ public:
         int op = OPERATORS.find(expr[i].data);
         int oper0 = pop();
         int oper1 = 0;
-        if (op < 8 || op > 10) {
+        if (op < 8 || op > 10 && op != 15) {
           oper1 = pop();
         }
         switch (op) {
@@ -771,7 +772,6 @@ public:
           push(oper0 == oper1);
           break;
         case 15:
-          push(oper1);
           push(oper0);
 					push(oper0);
           break;
@@ -852,12 +852,10 @@ public:
             }
             if (ret->type == VarType::STRING || ISARR(ret->type)) {
 							int pos = heap[ret->stackPos];
-							std::cout << pos << " ";
 							do{
 								printf("%c", (char)((heap[pos++])));
 								// std::cout << "next: " << heap[pos] << "is zero?" << std::to_string(heap[pos]);
 							}while((heap[pos] != 0));
-							std::cout << pos;
 							// data = "GOOD";
             } else if (ret->type == VarType::INT64) {
               data = std::to_string(heap[ret->stackPos]);
@@ -892,6 +890,7 @@ public:
             exit(-1);
           }
           vars[scope_num][tokens[++i].data] = new Variable{VarType::INT64, sp};
+					push(0);
         } else if (tokens[i].data == "char") {
           if (i + 1 > tokens.size()) {
             std::cout
@@ -899,14 +898,26 @@ public:
             exit(-1);
           }
           vars[scope_num][tokens[++i].data] = new Variable{VarType::CHAR, sp};
+					push(0);
         }else if (tokens[i].data == "array") {
-          if (i + 2 > tokens.size()) {
+          if (i + 2 > tokens.size() || i + 1 > tokens.size()) {
             std::cout
                 << "Error: Expected identifier when declaring variable!\n";
             exit(-1);
           }
 					int type = 0;
-          vars[scope_num][tokens[++i].data] = new Variable{type | 0x80, sp};
+					if(tokens[++i].token_type == TokenType::KEYWORD){
+						if(tokens[i].data == "var"){
+							type = VarType::INT64;
+						}
+						else if(tokens[i].data == "char"){
+							type = VarType::CHAR;
+						}
+						else if(tokens[i].data == "string"){
+							type = VarType::STRING;
+						}
+					}
+          vars[scope_num][tokens[++i].data] = new Variable{type | 0x80, sp++};
         }
 				else if (tokens[i].data == "sleep") {
           if (i >= tokens.size()) {
@@ -920,12 +931,15 @@ public:
             sleep(time);
           }
         } else if (tokens[i].data == "then") {
+					long long base = bp;
+					bp = sp;
+					push(base);
           scope_num++;
-          if (scope_num > max_scope) {
-            vars.push_back(unordered_map<string, Variable *>());
-            max_scope++;
-          }
+					vars.push_back(unordered_map<string, Variable *>());
         } else if (tokens[i].data == "end") {
+					long long base = heap[bp];
+					sp = bp;
+					bp = base;
           scope_num--;
           vars.pop_back();
         } else if (tokens[i].data == "if") {
@@ -1038,7 +1052,7 @@ int main(int argc, char **argv) {
 					std::cout << "Warning: Memory switch allocates memory in terms of int64 (0x400 will not allocate one kilobyte, but instead 8)";
 				}
         char *ret = (char *)malloc(512);
-        initmem = strtol(argv[++i], &ret, 0);
+        initmem = strtol(argv[++i], &ret, 0) * 1024 * 8;
       } else if(arg == "-h"){
 				std::cout << VERSION << "\n";
 				std::cout << "https://github.com/notsomeidiot123/knl\n";
@@ -1073,10 +1087,12 @@ int main(int argc, char **argv) {
     runner->run();
     if (DEBUG) {
       std::cout << "End of program! Unwinding stack!\n";
+			std::cout << "Start SP: " << runner->sp << " Start BP: " << runner->bp <<std::endl;
       while (runner->sp > runner->bp) {
         std::cout << "SP:" << runner->sp - 1 << "| DATA: " << runner->pop()
                   << std::endl;
       }
+			std::cout << "Final Scope: " << runner->scope_num;
 			ofstream dump = ofstream((string)"core" + std::to_string(getpid()) + ".out");
 			char *towrite = (char *)malloc(runner->memsize);
 			memcpy(towrite, runner->heap, runner->memsize);
