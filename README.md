@@ -44,6 +44,43 @@ To enter File modes (Safe RTE, Shell Script, etc)
 
 - Designer, Main Programmer and Maintainer
 
-## Latest Version:
+## Changelog:
 
-Here, There will be the changelog for the most recent (Major) version. Currently version 0.1.0 is in development, and will be released on [Github](https://github.com/notsomeidiot123/KNL/releases).
+The most recent version is at the top, followed with a quick summary of added/changed features
+
+### v0.1.1:
+
+- Added 'else'
+- Added new 'file' type
+- Added new keywords: `open` and `close`
+- Added proper Array declarations
+- Added #include directive
+	- file paths must be specified from the directory `knl` is executed in
+  - EXAMPLE:
+  - ```
+    $> cd project
+    $> ls
+    	src/ README.md
+    $> cat src/main.k
+    	#include "src/included.k"
+    	goto included;
+    	label incret0;
+    	print "Finished!\n";
+    $> cat src/included.k
+    	label included
+    	print "From an included file!\n";
+    	goto incret0
+    $> knl src/main.k
+    	From an included file!
+    	Finished
+    $> cat src/fail.k
+    	#include "included.k" //relative to the source path
+    	goto included;
+    	label incret0;
+    	print "Finished!\n";
+    $> knl src/fail.k
+    	KNL: Error: Unknown file "included.k"
+
+### v0.1.0:
+
+Initial release

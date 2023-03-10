@@ -5,8 +5,11 @@
 [1.0](#10-getting-started) Getting Started  
 [1.1](#11-really-getting-started) Really Getting Started  
 [1.2](#12-crash-course-to-rpn) Crash Course to RPN  
-[1.3](#13-your-first-program) Your first program
-[1.4](#14-expressions) Expressions
+[1.3](#13-your-first-program) Your first program  
+[1.4](#14-expressions) Expressions  
+[1.5](#15-keywords) Keywords  
+[1.5.1](#151-keyword-table) Keyword Table  
+[1.5.2](#152-variables) Variables
 ## 1.0: Getting Started
 
 Welcome to KNL! I'm so glad you decided to attempt to learn this awful, awful language.
@@ -18,11 +21,11 @@ Before I say any more, I would like to say a couple of things.
 2. KNL Is meant to be the shell language for my [Homebrew OS](https://github.com/notsomeidiot123/Horizon-OS)
 3. KNL Is meant to be FLEXIBLE. Depending on the run time paramaters, and how the interpreter itself is written,
    KNL can either be your standard, run of the mill,
-   Interpereted language, or a fully fledged language with raw, unsafe access
+   Interpereted shell language, or a fully fledged language with raw, unsafe access
    to memory and hardware
-4. KNL does things that make sense to the STACK, not the programmer
+4. KNL was made to do things that make sense to the STACK, not the programmer (but it's great if you understand whats happening)
 
-Fun fact: KNL executes 10x better than Python, even with an unoptimized build (-O0)
+Fun fact: KNL executes 20-10x faster than Python, even with an unoptimized build (-O0)
 
 ### 1.1: Really getting started:
 
@@ -153,6 +156,7 @@ Here's the list of all valid operators, and their names.
 |<|Less than|
 |>|Greater than|
 |=|Equal to|
+|:|Dupe|
 
 From those, you may be asking a couple of questions. What is a reader/writer? Why is = the equality operator, and not ==? What about complex
 boolean expressions? Where's && and ||?
@@ -178,9 +182,12 @@ if num1 @ then
 end
 //even more code
 ```
-If num1 is non-zero, the if statement will execute. However, if it is zero, it will not, just like any if statement in any language you've used before (If this is your first language, I'm warning you, get out now, while you still can)
+If num1 is non-zero, the if statement will execute. However, if it is zero, it will not, just like any if statement in any language you've used before 
+(If this is your first language, I'm warning you, get out now, while you still can)
 
-however using `if num1 @ num2 @ & then` may not always work, as there is a chance, especially as one of the variables values increases, that the bitwise `&` will return 0, despite both num1 and num2 being non-zero. In this situation, it will be necesary to 'Boolify' the operators, as to ensure that both are checked properly. To do this, simply add a !! after every segment of the expression.
+however using `if num1 @ num2 @ & then` may not always work, as there is a chance, especially as one of the
+variables values increases, that the bitwise `&` will return 0, despite both num1 and num2 being non-zero. In this situation,
+it will be necesary to 'Boolify' the operators, as to ensure that both are checked properly. To do this, simply add a !! after every segment of the expression.
 
 Examples:
 
@@ -209,4 +216,166 @@ Examples:
 !0 == 1//true
 !!0 == 0//true
 ```
+```knl
+//RPN
+5 !! 1 = //true
+5 ! 1 = // false
+0 !! 0 = //true
+0 ! 0 = //false
+0 ! 1 = //true
+0 !! 0 = //true
+5 ! 0 = //true
+```
 
+Lastly, the `:` (dupe) operator does exactly what it's name says. It duplicates the top of the stack
+so, if, for example, the stack looked like
+
+|Position|Data|
+|-|-|
+|2|3|
+|1|0|
+|0|9|
+
+and you used the dupe operator, the stack would then look like
+
+|Position|Data|
+|-|-|
+|3|3|
+|2|3|
+|1|0|
+|0|9|
+
+## 1.5: Keywords
+
+KNL has a total of 24 reserved/key words. Each of them serves a
+purpose, but not all of them have been implemented yet.
+there are 3 types of keywords: 
+
+- Variable
+- Control
+- IO
+
+Variable keywords are quite simple. All they are used for,
+is declaring variables, or functions, or other data structures
+
+Control keywords are a little bit more complicated, but not too much.
+Control keywords control the flow of the program, things like
+conditionals, and goto. Scoping (`then` and `else` also fall under this category)
+
+Lastly, we have IO keywords. Im sure the name explains it all.
+They are used to get input and output from a file or the user.
+things like `print` and `scan` are in this category. This is also probably the smallest category so far
+
+### 1.5.1 Keyword Table
+ keyword|type|Description
+ ---|---|---
+ void|Variable|Reserved
+ var|Variable|Declare a number variable (64 bits)
+ char|Variable|Declare a variable (8-bits)
+ string|Variable|Reserved
+ file|Variable|Declare a file variable (64-bit physical pointer);
+ func|Variable|Reserved
+ label|Variable|Mark a current place in the program to allow for easier `goto`s
+ module|Variable|Reserved
+ print|IO|Write text to STDOUT
+ scan|IO|Read text from STDIN, up to the first space (' ')
+ open|IO|Open a file (opened as 'r+', using the variable or string following keyword)
+ write|IO|Reserved
+ read|IO|Reserved
+ close|IO|Reserved
+ if|Control|Execute if following statement, if none, then if top of stack is non-zero
+ else|Control|Reserved
+ for |Control|Reserved
+ while|Control|Reserved
+ goto|Control|Jump to a position according to the following value (label, variable, or number)
+ end |Control|Decrease scope by one, and move stack frame back
+ then|Control|Increase scope by one, and move stack frame forward
+ array|Control|Reserved
+ sleep|Control|Sleep for x ticks
+ return|Control|Reserved
+ call |Control|Reserved
+
+### 1.5.2 Variables
+
+When you use a variable in an expression, it's ***pointer*** gets pushed to the stack, not the value.
+This is to make it slightly easier to implement, but can be a bit confusing at first.
+When you use a variable, and mean to read the data from it, use the `@` operator 
+to get the data stored at the variables location. Doing this will replace the pointer to the variable with the variable itself.
+
+Example 1:
+In this example, the code falsely makes the assumption that using num1 automatically 
+retrieves the data stored at num1. however, it leads to something like this happening:
+```knl
+var num1; //stored at position 5 on the stack
+21 num1 $; //sp=5 is now set to 25
+print num1; //prints 21
+5 num1 + num1 $;
+print num1; //prints 10
+```
+Thankfully, this makes pointer math and arrays very easy without the use of additional symbols,
+such as `[]`, but can be confusing for those writing code like this for the first time.
+This kind of problem is very similar to what happens when writing Assembler code.
+
+The correct way to do the desired operation above, however, would be to do
+```knl
+var num1;  //stored at position 5 on the stack
+21 num1 $; //sp=5 is now set to 25
+print num1; //prints 21
+5 num1 @+ num1 $; //fixed it!
+print num1; //prints 26
+```
+
+For types, as of v0.1.0, there are 3 types of variables implemented 
+(any keyword with Reserved under description has not been implemented)
+
+- Var
+- Char
+- Label
+
+Vars are the most basic type of variable. They are simply a 64-bit number.
+They can be used for pointers, for storing data, or packed strings, if you wish
+
+Chars are used to store the numerical representation of ASCII characters. Multiple chars in a row 
+create a char array, or a `string`. Before strings are implemented, you will need to use the variable as a pointer to the string you want to use,
+and manually do any operations on the string as if you were writing code in C/C++.
+But don't worry! operations like `print` and `scan` automatically understand this, and therefore
+do their operations in the same way, so no tedius converting is required! Only tedius memory operations.
+
+Labels are just markers in the program that tell the interpreter where something is.
+While labels are not required for program control, they make the whole thing exponentially easier. They are also the only
+variable type to be hoisted. You can get the value of a label the same way you can get the value of any other variable, but 
+the biggest difference, is that you can access `label` variables from anywhere in the program, no matter scope,
+or if it's before it's been declared. 
+
+While it's generally not recommended, you can do whats called "shadowing".
+Essentially, you declare a variable in a higher scope, of the same name as 
+a variable in a lower scope, and that higher-scoped variable will then be referenced
+instead of the lower-scoped one. 
+ <!--
+vector<string> keywords = {
+    "void",   // 0
+    "var",    // 1
+    "string", // 2
+    "func",   // 3
+    "label",  // 4
+    "module", // 5
+    // IO Keywords
+    "print", // 6
+    "scan", // 7
+    "write", // 8
+    "read",  // 9
+    // Control keywords
+    "if",     // 10
+    "elif",   // 11
+    "else",   // 12
+    "for",    // 13
+    "while",  // 14
+    "goto",   // 15
+    "end",    // 16
+    "then",   // 17
+    "array",  // 18
+    "sleep",  // 19
+    "return", // 20
+    "call",   // 21
+};
+-->
