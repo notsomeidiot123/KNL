@@ -1182,16 +1182,17 @@ int main(int argc, char **argv) {
     runner->tokenize();
     if (DEBUG)
       runner->debug_print_toks();
+		if (initmem < 0x400) {
+      std::cout << "Specified heap size less than minimum. Defaulting to 0x400 "
+                   "(1K)\n";
+      initmem = 0x400;
+    }
     if (!runner->runinit(initmem)) {
       std::cout << "Error initializing memory!\n";
       exit(-1);
     }
     runner->preprocess();
-    if (initmem < 0x400) {
-      std::cout << "Specified heap size less than minimum. Defaulting to 0x400 "
-                   "(1K)\n";
-      initmem = 0x400;
-    }
+    
 
     runner->run();
     if (DEBUG) {
