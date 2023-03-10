@@ -5,11 +5,17 @@
 [1.0](#10-getting-started) Getting Started  
 [1.1](#11-really-getting-started) Really Getting Started  
 [1.2](#12-crash-course-to-rpn) Crash Course to RPN  
+<<<<<<< HEAD
 [1.3](#13-your-first-program) Your first program  
 [1.4](#14-expressions) Expressions  
 [1.5](#15-keywords) Keywords  
 [1.5.1](#151-keyword-table) Keyword Table  
 [1.5.2](#152-variables) Variables
+=======
+[1.3](#13-your-first-program) Your first program
+[1.4](#14-expressions) Expressions
+[1.5](#15-keywords) Keywords
+>>>>>>> f840f952dc0b530733cd5fdceeb64ea13c0656b7
 ## 1.0: Getting Started
 
 Welcome to KNL! I'm so glad you decided to attempt to learn this awful, awful language.
@@ -230,7 +236,11 @@ Examples:
 Lastly, the `:` (dupe) operator does exactly what it's name says. It duplicates the top of the stack
 so, if, for example, the stack looked like
 
+<<<<<<< HEAD
 |Position|Data|
+=======
+|P|D|
+>>>>>>> f840f952dc0b530733cd5fdceeb64ea13c0656b7
 |-|-|
 |2|3|
 |1|0|
@@ -238,12 +248,17 @@ so, if, for example, the stack looked like
 
 and you used the dupe operator, the stack would then look like
 
+<<<<<<< HEAD
 |Position|Data|
+=======
+|P|D|
+>>>>>>> f840f952dc0b530733cd5fdceeb64ea13c0656b7
 |-|-|
 |3|3|
 |2|3|
 |1|0|
 |0|9|
+<<<<<<< HEAD
 
 ## 1.5: Keywords
 
@@ -379,3 +394,7 @@ vector<string> keywords = {
     "call",   // 21
 };
 -->
+=======
+
+## 1.5: Keywords
+>>>>>>> f840f952dc0b530733cd5fdceeb64ea13c0656b7

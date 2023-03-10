@@ -28,8 +28,6 @@ else then
 end
 var file;
 
-goto test;
-label return;
 // note to self: scope will keep increaseing every goto.
 //another note to self: shadowing is a thing
 //PUT IT IN THE DOCS
