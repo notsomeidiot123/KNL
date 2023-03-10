@@ -8,12 +8,11 @@
 #include <string>
 #include <time.h>
 #include <unordered_map>
-// #include <map>
 #include <vector>
 #include <unistd.h>
 #include <stdint.h>
 #define ISARR(a) a & 0x80
-
+#define GETNAME(a) #a
 
 
 #ifndef DEBUG
@@ -50,7 +49,6 @@ public:
     LABEL,
 		FUNCTION,
   };
-	
 };
 string strrep[] = {
 	"VOID",
@@ -172,6 +170,9 @@ vector<string> keywords = {
     "func",   // 3
     "label",  // 4
     "module", // 5
+		//Memory Keywords (Variable)
+		"alloc",
+		"free",
     // IO Keywords
     "print", // 6
     "scan", // 7
@@ -201,6 +202,9 @@ string keywords_r[] = {
     "func",   // 3
     "label",  // 4
     "module", // 5
+		//Memory Keywords (Variable)
+		"alloc",
+		"free",
     // IO Keywords
     "print", // 6
     "scan", // 7
@@ -290,7 +294,8 @@ public:
           continue;
         }
         lines.push_back(line);
-        free(line);
+        std::free(line);
+				
       }
     }
   }
@@ -306,7 +311,7 @@ public:
 				continue;
 			}
 			lines.push_back(line);
-			free(line);
+			std::free(line);
 		}
   }
   void add_file(string file) { files.push_back(file); }
@@ -678,11 +683,18 @@ public:
   int bp;
   int memsize;
 	int64_t last_result;
+	int64_t alloc_size;
+	char *memlist;
+	int64_t heapsize;
   int runinit(int memsize) {
     this->memsize = memsize;
     stacklimit = (memsize * 3) / 4;
-    heap = (int64_t *)malloc(memsize * sizeof(int64_t));
+		//8 = sizeof long long
+    heap = (int64_t *)malloc((memsize * 8));
 		last_result = 0;
+		alloc_size = alloc_size == 0 ? 64 : alloc_size;
+		heapsize = (memsize-stacklimit);
+		memlist = (bool *)malloc(heapsize/alloc_size);
     return heap != nullptr;
   }
   void push(int64_t value) {
@@ -753,7 +765,29 @@ public:
     heap[pos] = pop();
   }
   int64_t get(int pos) { return heap[pos]; }
-
+	enum MEMFLAGS{
+		USED = 1,
+		LINKED_TO_NEXT = 2,
+		LINKED_TO_LAST = 4,
+	};
+	int64_t alloc(int count){
+		int i = 0;
+		int start = 0;
+		for(int j = 0; j < heapsize/64; i++){
+			if((memlist[j] & USED) == 0){
+				for(; start < count; start++){
+					if(memlist[j+start] & 1){
+						start = 0;
+						break;
+					}
+				}
+			}
+		}
+		return i * 64;
+	}
+	void free(int64_t pos){
+		
+	}
   int eval(vector<token> expr) {
     Variable *left_side = nullptr;
     Variable *right_side = nullptr;
@@ -1091,6 +1125,13 @@ public:
           }
           // free(str);
         }
+				else if(tokens[i].data == "alloc"){
+					i++;
+					if(i > tokens.size()){
+						std::cout << "Error: Builtin 'Alloc' expeceted 'Number', recieved 'EOF'\n";
+						exit(-1);
+					}
+				}
 				else if(tokens[i].data == "open"){
 					if(++i > tokens.size()){
 						std::cout << "Error: Not enough arguments in builtin \"open\"" << std::endl;
@@ -1139,7 +1180,7 @@ int main(int argc, char **argv) {
     std::cout << "KNL: No Input File Specified!\n";
   } else {
     KN::Lang *runner = new KN::Lang();
-    int initmem = 0x400;
+    int initmem = 0x100000;
     for (int i = 1; i < argc; i++) {
       string arg = argv[i];
       if (arg == "-u") {
@@ -1182,10 +1223,10 @@ int main(int argc, char **argv) {
     runner->tokenize();
     if (DEBUG)
       runner->debug_print_toks();
-		if (initmem < 0x400) {
-      std::cout << "Specified heap size less than minimum. Defaulting to 0x400 "
-                   "(1K)\n";
-      initmem = 0x400;
+		if (initmem < 1024 * 1024) {
+      std::cout << "Specified heap size less than minimum. Defaulting to 0x100000 "
+                   "(1M)\n";
+      initmem = 1024 * 1024;
     }
     if (!runner->runinit(initmem)) {
       std::cout << "Error initializing memory!\n";
@@ -1195,6 +1236,7 @@ int main(int argc, char **argv) {
     
 
     runner->run();
+		runner->alloc(1);
     if (DEBUG) {
       std::cout << "End of program! Unwinding stack!\n";
 			std::cout << "Start SP: " << runner->sp << " Start BP: " << runner->bp <<std::endl;
@@ -1210,7 +1252,7 @@ int main(int argc, char **argv) {
 			std::cout << "Dumped final memory into file!\n";
     }
 		if(DEBUG){
-			std::cout << "KNL v0.1.0 DEBUG BUILD EXIT\n";
+			std::cout << VERSION <<" BUILD EXIT\n";
 			std::cout << "PID: " + std::to_string(getpid()) + "\n";
 		}
     // std::cout << "KEYWORD: ";
