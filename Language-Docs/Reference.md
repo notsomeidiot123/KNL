@@ -295,7 +295,7 @@ things like `print` and `scan` are in this category. This is also probably the s
  then|Control|Increase scope by one, and move stack frame forward
  array|Control|Reserved
  sleep|Control|Sleep for x ticks
- return|Control|Reserved
+ return|Control|Declare a array variable, of the following type
  call |Control|Reserved
 
 ### 1.5.2 Variables

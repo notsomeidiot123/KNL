@@ -1,0 +1,25 @@
+{
+  "name": "knl",
+  "displayName": "KNL",
+  "description": "KNL Programming Language",
+  "version": "0.0.1",
+  "engines": {
+    "vscode": "^1.76.0"
+  },
+  "categories": [
+    "Programming Languages"
+  ],
+  "contributes": {
+    "languages": [{
+      "id": "knl",
+      "aliases": ["KiminoProgramming Language ", "knl"],
+      "extensions": [".k",".kh"],
+      "configuration": "./language-configuration.json"
+    }],
+    "grammars": [{
+      "language": "knl",
+      "scopeName": "source.k",
+      "path": "./syntaxes/knl.tmLanguage.json"
+    }]
+  }
+}
