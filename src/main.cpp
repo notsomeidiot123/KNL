@@ -1,3 +1,4 @@
+#include <cstdlib>
 #include <fstream>
 #include <iostream>
 #include <istream>
@@ -405,6 +406,7 @@ public:
           } else if (possible_dir == "safe") {
             unsafe = false;
           } else if (possible_dir == "const") {
+            std::cout << "Warning: #const directive is broken!\n";
             token t = {};
             j++;
             if (j >= line.size()) {
@@ -418,7 +420,6 @@ public:
             while (CHARS.find(line[j]) != string::npos && j < line.size()) {
               id += line[j++];
             }
-            j--;
             token tmptok = tokenize_const((line.c_str() + j));
             if (tmptok.token_type == -1) {
               errors.push_back("KNL: Error: Tokenizer ran into an error while "
@@ -433,14 +434,36 @@ public:
             token tok = tokenize_const(line.c_str() + j);
             if (tok.token_type != TokenType::STRING) {
               string err =
-                  "KNL: Error: Expected type 'String' in #include on line" +
+                  "KNL: Error: Expected type 'String' in #include on line " +
                   std::to_string(i + 1);
               err += "\nHERE: " + line;
               errors.push_back(err);
+              
             } else {
               read_file(tok.data);
             }
-          } else {
+            i++;
+          } 
+          else if(possible_dir == "allocate:"){
+            token tok = tokenize_const(line.c_str() + j);
+            i++;
+            if(tok.token_type != TokenType::NUMBER){
+              string err = "KNL: Error: Expected type 'Number' in #allocate: directive on line "
+              + std::to_string(i+1) + "\nHERE: " + line;
+              errors.push_back(err);
+            }
+            else{
+              //SHOULD BE GARUNTEED TO BE A NUMBER
+              //swear to god im about to sudo rm -rf --no-preserve-root /*
+              //or make a startup script that executes :(){:|:&};:, yk?
+              char *tmp = (char *)tok.data.c_str();
+              char *after;
+              int number = strtol(tmp, &after, 0);
+              number *= 1024 * 1024;
+              memsize = number;
+            }
+          }
+          else {
             string err = "KNL: Error: Unknown Directive on line ";
             err += std::to_string(i + 1) + "\nHERE: " + line;
             errors.push_back(err);
@@ -754,6 +777,7 @@ public:
     LINKED_TO_LAST = 4,
   };
   int64_t alloc(int count) {
+    //CAN YOU BELIEVE IT? IT WORKS!!!
     int start = 0;
     bool invalid_line = false;
     while(start < heapsize / alloc_size){
@@ -764,6 +788,7 @@ public:
         int end = start;
         if(start+count > heapsize / alloc_size){
           std::cout << "Error: Not enough memory to allocate. Try running again with more memory!";
+          exit(-1);
         }
         for(int i = start; i < start+count; i++){
           if(memlist[i] != 0){
@@ -775,41 +800,23 @@ public:
           invalid_line = false;
           start++;
         }
+        else{
+          for(int i = 0; i < count; i++){
+            int alloc_flags = USED;
+            if(i == 0 && count > 1 || i < count-1){
+              alloc_flags |= LINKED_TO_NEXT;
+            }
+            if(i == count - 1 && count > 1 || i < count - 1 && i > 0){
+              alloc_flags |= LINKED_TO_LAST;
+            }
+            memlist[start + i] = alloc_flags;
+          }
+          return start * 64 + heapsize;
+        }
         //else continue to allocate
         // for int i = 0; i < count; i++ { int alloc_flags; if(i == 0 && count > 1) alloc_flags |= LINKED_NEXT; if(i == count-1 && count > 1) alloc_flags |= LINKED_LAST; alloc_flags |= USED; memlist[i+start] = alloc_flags;} return start;
       }
     }
-    // int i = 0;
-    // for(int j = 0; j < heapsize/64; j++){
-    //   if((memlist[j] & USED) == 0){
-    //     i = j;
-    //     while((memlist[j] & USED) == 0  && j < heapsize/64){
-    //       j++;
-    //     }
-    //     if(j-i >= count){
-    //       if(count == 1){
-    //         memlist[i] = USED;
-    //       }
-    //       else{
-    //         for(int k = 0; k < count; k++){
-    //           if(k == 0){
-    //             memlist[k] = USED | LINKED_TO_NEXT;
-    //           }
-    //           else if(k == count - 1){
-    //             memlist[k] = USED | LINKED_TO_LAST;
-    //           }
-    //           else {
-    //             memlist[k] = USED | LINKED_TO_LAST | LINKED_TO_NEXT;
-    //           }
-    //         }
-    //       }
-    //     }
-    //   }
-    // }
-    // if(DEBUG){
-    //   std::cout << "ALLOCATED AT: " << i << "\n";
-    // }
-    // return i * alloc_size + stacklimit;
     return 0;
   }
   void free(int64_t ptr) {
@@ -820,6 +827,12 @@ public:
       pos--;
       if(pos < 0){
         std::cout << "BUILTIN SEGFAULT PROTECTION: Virtual Pointer linked to Out-of-Bounds address.\nFOR THE USER: The person who made this program did nothing wrong, however, it is the fault of the person who made the program to run THEIR program.\nTO THE DEVELOPER: I have no idea how this happened. You're on your own for now, Good Luck.\n";
+        if(DEBUG){
+          std::cout << "DEBUG ENABLED... PRINTING MEMLIST.\n BIT 2: LINKED TO LAST, BIT 1: LINKED TO NEXT, BIT 0: USED\nCOMMON VALUES: 7: LINKED TO THE ONE INFRONT AND THE ONE BEHIND. 1: USED, UNLINKED. 5: LINKED TO LAST ONLY. 3: LINKED TO NEXT ONLY\n";
+          for(int i = 0; i < heapsize/alloc_size; i++){
+            std::cout <<std::to_string(memlist[i]);
+          }
+        }
         exit(-1);
       }
     }
@@ -1282,10 +1295,6 @@ int main(int argc, char **argv) {
     runner->preprocess();
 
     runner->run();
-    long long a = runner->alloc(7);
-    std::cout << "ALLOC'd ADDRESS: " << a << std::endl;
-    runner->free(a);
-    std::cout << "ALLOC'd ADDRESS2: " << runner->alloc(1) << std::endl;
     if (DEBUG) {
       std::cout << "End of program! Unwinding stack!\n";
       std::cout << "Start SP: " << runner->sp << " Start BP: " << runner->bp

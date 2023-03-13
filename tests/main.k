@@ -11,7 +11,8 @@ var i;
 print first;
 print "\n";
 then
-	label loop; //this is the 26 at the bottom of the stack
+	label loop; //this is at the bottom of the stack
+	//labels get hoisted into global scope no matter where they are
 end
 then
 	var tmp;
