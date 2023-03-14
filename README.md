@@ -48,6 +48,15 @@ To enter File modes (Safe RTE, Shell Script, etc)
 
 The most recent version is at the top, followed with a quick summary of added/changed features
 
+### v0.1.2:
+
+- Strings are now copied over to memory
+	- Strings are null-terminated
+- Arrays also are now copied over to memory
+- Added in-source memory allocation directive
+	- use: `#allocate [size_in_8mbs]`
+- Changed the way virtual memory is allocated at startup
+
 ### v0.1.1:
 
 - Added 'else'
