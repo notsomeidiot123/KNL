@@ -74,32 +74,11 @@ public:
   int type;
   int64_t stackPos;
 };
-class Double : public Variable {
+class StrTabEntry {
 public:
-  double data;
-  Double(int type, double data) {
-    this->type = type;
-    this->data = data;
-  }
+  int type;
+  int64_t pos;
 };
-class String : public Variable {
-public:
-  string data;
-  String(int type, string data) {
-    this->type = type;
-    this->data = data;
-  }
-};
-class Array : public Variable {
-  void *ptr;
-  int length;
-  Array(int type, void *data, int length) {
-    this->type = type;
-    this->ptr = data;
-    this->length = length;
-  }
-};
-
 class TokenType {
 public:
   enum types {
@@ -141,7 +120,6 @@ typedef struct tok {
   int token_type;
   string data;
 } token;
-
 bool unsafe = false;
 bool strong = false;
 bool no_warn = false;
@@ -248,6 +226,7 @@ private:
   vector<string> files;
 
 public:
+  unordered_map<string, StrTabEntry> strtab;
   int scope_num = 0;
   int max_scope = 0;
   Lang() {
@@ -258,6 +237,7 @@ public:
     tokens = vector<token>();
     files = vector<string>();
     constants = unordered_map<string, token>();
+    strtab = unordered_map<string, StrTabEntry>();
   }
   void read_files() {
     if (files.size() == 0) {
@@ -438,32 +418,30 @@ public:
                   std::to_string(i + 1);
               err += "\nHERE: " + line;
               errors.push_back(err);
-              
+
             } else {
               read_file(tok.data);
             }
-            i++;
-          } 
-          else if(possible_dir == "allocate:"){
+            break;
+          } else if (possible_dir == "allocate") {
             token tok = tokenize_const(line.c_str() + j);
-            i++;
-            if(tok.token_type != TokenType::NUMBER){
-              string err = "KNL: Error: Expected type 'Number' in #allocate: directive on line "
-              + std::to_string(i+1) + "\nHERE: " + line;
+            if (tok.token_type != TokenType::NUMBER) {
+              string err = "KNL: Error: Expected type 'Number' in #allocate: "
+                           "directive on line " +
+                           std::to_string(i + 1) + "\nHERE: " + line;
               errors.push_back(err);
-            }
-            else{
-              //SHOULD BE GARUNTEED TO BE A NUMBER
-              //swear to god im about to sudo rm -rf --no-preserve-root /*
-              //or make a startup script that executes :(){:|:&};:, yk?
+            } else {
+              // SHOULD BE GARUNTEED TO BE A NUMBER
+              // swear to god im about to sudo rm -rf --no-preserve-root /*
+              // or make a startup script that executes :(){:|:&};:, yk?
               char *tmp = (char *)tok.data.c_str();
               char *after;
               int number = strtol(tmp, &after, 0);
               number *= 1024 * 1024;
               memsize = number;
             }
-          }
-          else {
+            break;
+          } else {
             string err = "KNL: Error: Unknown Directive on line ";
             err += std::to_string(i + 1) + "\nHERE: " + line;
             errors.push_back(err);
@@ -578,7 +556,9 @@ public:
             }
           }
           // for(int k = 0; k < tmptoks.size();k++);
-          token topush = token{TokenType::ARRAY, line.substr(start, start - j)};
+          token topush =
+              token{TokenType::ARRAY, line.substr(start + 1, start - j)};
+          topush.data.pop_back();
           tokens.push_back(topush);
         } else if (line[j] == ';') {
           token tok = token{TokenType::END, ";"};
@@ -664,6 +644,65 @@ public:
           tok.data = str;
         }
         return tok;
+      } else if (line[j] == '{') {
+        int start = j;
+        j++;
+        int type = -1;
+        vector<token> tmptoks = vector<token>();
+        while (line[j] != '}') {
+          if (j >= line.size()) {
+            string err = "KNL: Error: Unterminated Array Initializer on line " +
+                         std::to_string(i + 1) + "\nHERE: " + line;
+            errors.push_back(err);
+            break;
+          }
+          token tmptok = tokenize_const(line.c_str() + j);
+          if (tmptok.token_type == -1) {
+            if (tmptok.data == "UNTERM_STRING") {
+              string err = "KNL: Error: Unterminated String on line " +
+                           std::to_string(i + 1) + "\nHERE: " + line;
+              errors.push_back(err);
+              break;
+            }
+          }
+          if (type == -1) {
+            type = tmptok.token_type;
+          } else if (tmptok.token_type != type) {
+            errors.push_back("KNL: Error: Incompatible types in array "
+                             "initializer on line " +
+                             std::to_string(i + 1) + "\nHERE: " + line);
+          }
+          bool instr = 0;
+          bool tobreak = 0;
+          while (!(line[j] == ',' || line[j] == '}') && !instr) {
+            if (j >= line.size()) {
+              string err =
+                  "KNL: Error: Missing ',' in Array Initializer on line " +
+                  std::to_string(i + 1) + "\nHERE: " + line;
+              errors.push_back(err);
+              break;
+            }
+            if (j == '"') {
+              instr = !instr;
+            }
+            if (line[j] == '}') {
+              tobreak = true;
+              continue;
+            } else {
+              j++;
+            }
+          }
+          if (line[j] == '}') {
+            break;
+          } else {
+            j++;
+          }
+        }
+        // for(int k = 0; k < tmptoks.size();k++);
+        token topush =
+            token{TokenType::ARRAY, line.substr(start + 1, start - j)};
+        topush.data.pop_back();
+        return topush;
       } else {
         return token{-1, "INV_TOKEN"};
       }
@@ -681,13 +720,12 @@ public:
   int64_t stacklimit;
   int sp;
   int bp;
-  int memsize;
+  int memsize = 0;
   int64_t last_result;
   int64_t alloc_size;
   char *memlist;
   int64_t heapsize;
-  int runinit(int memsize) {
-    this->memsize = memsize;
+  int runinit() {
     stacklimit = (memsize * 2) / 4;
     // 8 = sizeof long long
     heap = (int64_t *)malloc((memsize * 8));
@@ -695,11 +733,12 @@ public:
     alloc_size = alloc_size == 0 ? 64 : alloc_size;
     heapsize = (memsize - stacklimit);
     memlist = (char *)malloc(heapsize / alloc_size);
-    for(int i = 0; i < heapsize/alloc_size; i++){
+    for (int i = 0; i < heapsize / alloc_size; i++) {
       memlist[i] = 0;
     }
-    if(DEBUG){
+    if (DEBUG) {
       std::cout << "Memory allocated to the heap: " << heapsize << std::endl;
+      std::cout << "Total memory allocated: " << memsize * 8 << std::endl;
     }
     return heap != nullptr;
   }
@@ -736,6 +775,62 @@ public:
       return heap[sp];
     }
   }
+  StrTabEntry process_array(string array) {
+    // I know it's slow. I'll optimize it later, I guess.
+    int type = 0;
+    string tmp = "";
+    char *ttok = strtok((char *)array.c_str(), ",");
+    while (ttok) {
+      tmp += ttok;
+      ttok = strtok(NULL, ",");
+    }
+    std::cout << "sanitized string: " << tmp;
+    vector<token> items = vector<token>();
+    char *tok = strtok((char *)tmp.c_str(), " ");
+    while (tok) {
+
+      token t = tokenize_const(tok);
+      if (type == 0) {
+        type = t.token_type;
+      } else if (type != t.token_type) {
+        std::cout << "KNL: Error: Array initializer must consist of identical "
+                     "types!\n";
+        exit(-1);
+      }
+      if (t.token_type == -1) {
+        std::cout << "KNL: Error: Tokenizer ran into an error while "
+                     "parsing token: token not recognzied: "
+                  << t.data;
+        exit(-1);
+      }
+      items.push_back(t);
+      tok = strtok(NULL, " ");
+    }
+		int ptr = alloc((items.size() / alloc_size) + 1);
+		for(int i = 0; i < items.size(); i++){
+			if(items[i].token_type == TokenType::STRING){
+				heap[ptr+i] = process_string(items[i].data);
+			}
+			else if(items[i].token_type == TokenType::NUMBER){
+				heap[ptr+i] = strtol((char*)items[i].data.c_str(), NULL, 0);
+			}
+			else if(items[i].token_type == TokenType::ARRAY){
+				heap[ptr+i] = process_array(items[i].data).pos;
+			}
+		}
+    
+
+    string presplit = array.c_str();
+    return StrTabEntry{type, ptr};
+  }
+	int process_string(string str){
+		int ptr = alloc((str.length() + 1 / alloc_size) + 1);
+		for (int j = 0; j < str.size(); j++) {
+    	heap[ptr + j] = str[j];
+    }
+	  heap[ptr + str.size()] = 0;
+		return ptr;
+	}
   void preprocess() {
     for (int i = 0; i < tokens.size(); i++) {
       if (tokens[i].token_type == TokenType::KEYWORD &&
@@ -745,12 +840,23 @@ public:
           std::cout << "Error: Label keyword with no label. Expected: "
                        "TokenType::IDENTIFIER\n";
         }
-
         Variable *intt = new Variable();
         intt->type = VarType::LABEL;
         intt->stackPos = sp;
         push(i);
         vars[0][tokens[i].data] = intt;
+      } else if (tokens[i].token_type == TokenType::STRING ||
+                 tokens[i].token_type == TokenType::ARRAY) {
+        if (tokens[i].token_type == TokenType::ARRAY) {
+          if (strtab.count(tokens[i].data)) {
+            continue;
+          }
+          strtab[tokens[i].data] = process_array(tokens[i].data);
+
+        } else {
+					
+          strtab[tokens[i].data] = StrTabEntry{VarType::STRING, process_string(tokens[i].data)};
+        }
       }
     }
   }
@@ -777,44 +883,46 @@ public:
     LINKED_TO_LAST = 4,
   };
   int64_t alloc(int count) {
-    //CAN YOU BELIEVE IT? IT WORKS!!!
+    // CAN YOU BELIEVE IT? IT WORKS!!!
     int start = 0;
     bool invalid_line = false;
-    while(start < heapsize / alloc_size){
-      if(memlist[start] & USED){
+    while (start < heapsize / alloc_size) {
+      if (memlist[start] & USED) {
         start++;
-      }
-      else{
+      } else {
         int end = start;
-        if(start+count > heapsize / alloc_size){
-          std::cout << "Error: Not enough memory to allocate. Try running again with more memory!";
+        if (start + count > heapsize / alloc_size) {
+          std::cout << "Error: Not enough memory to allocate. Try running "
+                       "again with more memory!";
           exit(-1);
         }
-        for(int i = start; i < start+count; i++){
-          if(memlist[i] != 0){
+        for (int i = start; i < start + count; i++) {
+          if (memlist[i] != 0) {
             invalid_line = true;
             break;
           }
         }
-        if(invalid_line){
+        if (invalid_line) {
           invalid_line = false;
           start++;
-        }
-        else{
-          for(int i = 0; i < count; i++){
+        } else {
+          for (int i = 0; i < count; i++) {
             int alloc_flags = USED;
-            if(i == 0 && count > 1 || i < count-1){
+            if (i == 0 && count > 1 || i < count - 1) {
               alloc_flags |= LINKED_TO_NEXT;
             }
-            if(i == count - 1 && count > 1 || i < count - 1 && i > 0){
+            if (i == count - 1 && count > 1 || i < count - 1 && i > 0) {
               alloc_flags |= LINKED_TO_LAST;
             }
             memlist[start + i] = alloc_flags;
           }
           return start * 64 + heapsize;
         }
-        //else continue to allocate
-        // for int i = 0; i < count; i++ { int alloc_flags; if(i == 0 && count > 1) alloc_flags |= LINKED_NEXT; if(i == count-1 && count > 1) alloc_flags |= LINKED_LAST; alloc_flags |= USED; memlist[i+start] = alloc_flags;} return start;
+        // else continue to allocate
+        //  for int i = 0; i < count; i++ { int alloc_flags; if(i == 0 && count
+        //  > 1) alloc_flags |= LINKED_NEXT; if(i == count-1 && count > 1)
+        //  alloc_flags |= LINKED_LAST; alloc_flags |= USED; memlist[i+start] =
+        //  alloc_flags;} return start;
       }
     }
     return 0;
@@ -823,24 +931,33 @@ public:
     int pos = ptr - stacklimit;
     pos /= alloc_size;
     int debug_pos = 0;
-    while((memlist[pos] & USED) && (memlist[pos] & LINKED_TO_LAST)){
+    while ((memlist[pos] & USED) && (memlist[pos] & LINKED_TO_LAST)) {
       pos--;
-      if(pos < 0){
-        std::cout << "BUILTIN SEGFAULT PROTECTION: Virtual Pointer linked to Out-of-Bounds address.\nFOR THE USER: The person who made this program did nothing wrong, however, it is the fault of the person who made the program to run THEIR program.\nTO THE DEVELOPER: I have no idea how this happened. You're on your own for now, Good Luck.\n";
-        if(DEBUG){
-          std::cout << "DEBUG ENABLED... PRINTING MEMLIST.\n BIT 2: LINKED TO LAST, BIT 1: LINKED TO NEXT, BIT 0: USED\nCOMMON VALUES: 7: LINKED TO THE ONE INFRONT AND THE ONE BEHIND. 1: USED, UNLINKED. 5: LINKED TO LAST ONLY. 3: LINKED TO NEXT ONLY\n";
-          for(int i = 0; i < heapsize/alloc_size; i++){
-            std::cout <<std::to_string(memlist[i]);
+      if (pos < 0) {
+        std::cout << "BUILTIN SEGFAULT PROTECTION: Virtual Pointer linked to "
+                     "Out-of-Bounds address.\nFOR THE USER: The person who "
+                     "made this program did nothing wrong, however, it is the "
+                     "fault of the person who made the program to run THEIR "
+                     "program.\nTO THE DEVELOPER: I have no idea how this "
+                     "happened. You're on your own for now, Good Luck.\n";
+        if (DEBUG) {
+          std::cout
+              << "DEBUG ENABLED... PRINTING MEMLIST.\n BIT 2: LINKED TO LAST, "
+                 "BIT 1: LINKED TO NEXT, BIT 0: USED\nCOMMON VALUES: 7: LINKED "
+                 "TO THE ONE INFRONT AND THE ONE BEHIND. 1: USED, UNLINKED. 5: "
+                 "LINKED TO LAST ONLY. 3: LINKED TO NEXT ONLY\n";
+          for (int i = 0; i < heapsize / alloc_size; i++) {
+            std::cout << std::to_string(memlist[i]);
           }
         }
         exit(-1);
       }
     }
     debug_pos = pos;
-    while(memlist[pos] & USED && memlist[pos] & LINKED_TO_NEXT){
+    while (memlist[pos] & USED && memlist[pos] & LINKED_TO_NEXT) {
       memlist[pos++] = 0;
     }
-    
+
     return;
   }
   int eval(vector<token> expr) {
@@ -1254,10 +1371,10 @@ int main(int argc, char **argv) {
         if (!no_warn) {
           std::cout
               << "Warning: Memory switch allocates memory in terms of int64 "
-                 "(0x400 will not allocate one kilobyte, but instead 8)";
+                 "(0x10 will not allocate 16Mb, but instead 256)";
         }
         char *ret = (char *)malloc(512);
-        initmem = strtol(argv[++i], &ret, 0) * 1024;
+        initmem = strtol(argv[++i], &ret, 0) * 1024 * 1024;
       } else if (arg == "-h") {
         std::cout << VERSION << "\n";
         std::cout << "https://github.com/notsomeidiot123/knl\n";
@@ -1267,7 +1384,7 @@ int main(int argc, char **argv) {
         std::cout
             << "Anything that does not follow a switch that does not require "
                "an immediate value is treated as the file to execute\n";
-        std::cout << "-m:\n\tSpecify amount of memory to be use in Kilobytes. "
+        std::cout << "-m:\n\tSpecify amount of memory to be use in Megabytes. "
                      "KNL allocates this * 8\n";
         std::cout << "-u:\n\tAllow unsafe code. Not reccomended unless being "
                      "used in a freestanding enviornment where direct memory "
@@ -1284,11 +1401,12 @@ int main(int argc, char **argv) {
       runner->debug_print_toks();
     if (initmem < 1024 * 1024) {
       std::cout
-          << "Specified heap size less than minimum. Defaulting to 0x100000 "
+          << "Specified memory size less than minimum. Defaulting to 0x100000 "
              "(1M)\n";
       initmem = 1024 * 1024;
     }
-    if (!runner->runinit(initmem)) {
+    runner->memsize = runner->memsize > 0 ? runner->memsize : initmem;
+    if (!runner->runinit()) {
       std::cout << "Error initializing memory!\n";
       exit(-1);
     }
@@ -1306,12 +1424,10 @@ int main(int argc, char **argv) {
       std::cout << "Final Scope: " << runner->scope_num << std::endl;
       ofstream dump =
           ofstream((string) "core" + std::to_string(getpid()) + ".out");
-      char *towrite = (char *)malloc(runner->memsize);
-      memcpy(towrite, runner->heap, runner->memsize);
+      char *towrite = (char *)malloc(runner->memsize * 8);
+      memcpy(towrite, runner->heap, runner->memsize * 8);
       dump.write(towrite, runner->memsize);
       std::cout << "Dumped final memory into file!\n";
-    }
-    if (DEBUG) {
       std::cout << VERSION << " BUILD EXIT\n";
       std::cout << "PID: " + std::to_string(getpid()) + "\n";
     }
