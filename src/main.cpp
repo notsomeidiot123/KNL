@@ -16,10 +16,10 @@
 #define GETNAME(a) #a
 
 #ifndef DEBUG
-#define VERSION "KNL v0.1.2-alpha"
+#define VERSION "KNL v0.1.1-alpha"
 #define DEBUG 0
 #else
-#define VERSION "KNL v0.1.2-debug_alpha"
+#define VERSION "KNL v0.1.1-debug_alpha"
 #endif
 
 using std::fstream;
@@ -651,35 +651,26 @@ public:
         vector<token> tmptoks = vector<token>();
         while (line[j] != '}') {
           if (j >= line.size()) {
-            string err = "KNL: Error: Unterminated Array Initializer on line " +
-                         std::to_string(i + 1) + "\nHERE: " + line;
-            errors.push_back(err);
+            return token{-1, "INV_ARR"};
             break;
           }
           token tmptok = tokenize_const(line.c_str() + j);
           if (tmptok.token_type == -1) {
             if (tmptok.data == "UNTERM_STRING") {
-              string err = "KNL: Error: Unterminated String on line " +
-                           std::to_string(i + 1) + "\nHERE: " + line;
-              errors.push_back(err);
+              return token{-1, "INV_ARR"};
               break;
             }
           }
           if (type == -1) {
             type = tmptok.token_type;
           } else if (tmptok.token_type != type) {
-            errors.push_back("KNL: Error: Incompatible types in array "
-                             "initializer on line " +
-                             std::to_string(i + 1) + "\nHERE: " + line);
+            return token{-1, "INV_ARR"};
           }
           bool instr = 0;
           bool tobreak = 0;
           while (!(line[j] == ',' || line[j] == '}') && !instr) {
             if (j >= line.size()) {
-              string err =
-                  "KNL: Error: Missing ',' in Array Initializer on line " +
-                  std::to_string(i + 1) + "\nHERE: " + line;
-              errors.push_back(err);
+              return token{-1, "INV_ARR"};
               break;
             }
             if (j == '"') {
