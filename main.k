@@ -1,5 +1,5 @@
 //calculate Fibonacci Sequence
-
+#const MAX_ITER 45
 var first;
 var second;
 var i;
@@ -22,10 +22,9 @@ then
 	tmp @ second $;
 end
 i @ 1 + i $;
-if i @ 45 > then
+if i @ MAX_ITER > then
 	goto loop;
 end
 else then
 	print "Finished!\n";
 end
-var file;

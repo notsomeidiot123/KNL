@@ -16,10 +16,10 @@
 #define GETNAME(a) #a
 
 #ifndef DEBUG
-#define VERSION "KNL v0.1.1-alpha"
+#define VERSION "KNL v0.2.0-alpha"
 #define DEBUG 0
 #else
-#define VERSION "KNL v0.1.1-debug_alpha"
+#define VERSION "KNL v0.2.0-debug_alpha"
 #endif
 
 using std::fstream;
@@ -93,6 +93,7 @@ public:
     NUMBER,
     COMMENT,
     CONSTANT,
+		PUNCT,
   };
 };
 string token_type_str[] = {
@@ -107,6 +108,7 @@ string token_type_str[] = {
     "NUMBER",   // done
     "COMMENT",  // done
     "CONSTANT", // done
+		"PUNCT"
 };
 unordered_map<string, char> escapes = {
     {"\\n", '\n'}, {"\\r", '\r'},  {"\\t", '\t'}, {"\\b", '\b'},  {"\\a", '\a'},
@@ -115,6 +117,8 @@ unordered_map<string, char> escapes = {
 typedef struct func {
   int type;
   int64_t token_offset;
+	int argc;
+	string name;
 } function;
 typedef struct tok {
   int token_type;
@@ -153,7 +157,6 @@ vector<string> keywords = {
     "array",  // 18
     "sleep",  // 19
     "return", // 20
-    "call",   // 21
 };
 string keywords_r[] = {
     "void", // 0
@@ -183,15 +186,14 @@ string keywords_r[] = {
     "array",  // 18
     "sleep",  // 19
     "return", // 20
-    "call",   // 21
 };
 
 const string CHARS =
     "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUBWXYZ1234567890_";
 const string NUMS = "1234567890._";
 const string HEX = "01234567890abcdef_x";
-const string OPERATORS = "+-*/%&|^!~@$><=:";
-
+const string OPERATORS = "+-*/%&|^!~@$><=";
+const string PUNCT = "[]:.,()";
 namespace KN {
 class Shell {
 public:
@@ -218,6 +220,7 @@ public:
 class Lang {
 private:
   vector<unordered_map<string, Variable *>> vars;
+	unordered_map<string, function>funcs;
   unordered_map<string, token> constants;
   vector<string> lines;
   vector<token> tokens;
@@ -237,6 +240,7 @@ public:
     tokens = vector<token>();
     files = vector<string>();
     constants = unordered_map<string, token>();
+		funcs = unordered_map<string, function>();
     strtab = unordered_map<string, StrTabEntry>();
   }
   void read_files() {
@@ -386,7 +390,6 @@ public:
           } else if (possible_dir == "safe") {
             unsafe = false;
           } else if (possible_dir == "const") {
-            std::cout << "Warning: #const directive is broken!\n";
             token t = {};
             j++;
             if (j >= line.size()) {
@@ -481,8 +484,6 @@ public:
           j--;
           token tok{};
           bool found = false;
-          // hardcoded keywords.length, idk why its not working if it's not
-          // hardcoded
           for (int k = 0; k < keywords.size(); k++) {
             string cmp = keywords[k];
             if (keywords[k] == str) {
@@ -563,8 +564,12 @@ public:
         } else if (line[j] == ';') {
           token tok = token{TokenType::END, ";"};
           tokens.push_back(tok);
-        } else {
-          if (line[j] != ' ')
+        }
+				else if(PUNCT.find(line[j]) != string::npos){
+					tokens.push_back(token{TokenType::PUNCT, (string)"" + line[j]});
+				}
+				else {
+          if (line[j] != ' ' && line[j] != '\t')
             errors.push_back((string) "KNL: Error: Unexpected token \'" +
                              line[j] + "\' on line " + std::to_string(i + 1) +
                              "\nHERE: " + line);
@@ -769,13 +774,7 @@ public:
   StrTabEntry process_array(string array) {
     // I know it's slow. I'll optimize it later, I guess.
     int type = 0;
-    string tmp = "";
-    char *ttok = strtok((char *)array.c_str(), ",");
-    while (ttok) {
-      tmp += ttok;
-      ttok = strtok(NULL, ",");
-    }
-    std::cout << "sanitized string: " << tmp;
+    string tmp = array;
     vector<token> items = vector<token>();
     char *tok = strtok((char *)tmp.c_str(), " ");
     while (tok) {
@@ -849,6 +848,11 @@ public:
           strtab[tokens[i].data] = StrTabEntry{VarType::STRING, process_string(tokens[i].data)};
         }
       }
+			else if(tokens[i].token_type == TokenType::KEYWORD){
+				if(tokens[i].data == "func"){
+					
+				}
+			}
     }
   }
   Variable *get_var(string varname) {
@@ -963,19 +967,36 @@ public:
         char *strt = (char *)expr[i].data.c_str();
         push(strtol(strt, &strt, 0));
       } else if (expr[i].token_type == TokenType::IDENTIFIER) {
-        push(get_var(expr[i].data)->stackPos);
-        if (get_var(expr[i].data)->type == VarType::STRING) {
-          if (!no_warn && !no_warn_string) {
-            std::cout << "Warning: Performing operations on string does not "
-                         "modify!\n";
-          }
-        }
-      } else if (expr[i].token_type == TokenType::OPERATOR) {
+        push(get_var(expr[i].data)->stackPos); 
+      } 
+			else if(expr[i].token_type == TokenType::PUNCT){
+				if(expr[i].data == "["){
+					vector<token>tmpex = vector<token>();
+					tmpex.push_back(token{TokenType::NUMBER, std::to_string(pop())});
+					tmpex.push_back(token{TokenType::OPERATOR, "@"});
+					while(expr[i++].data != "]"){
+						if(expr[i].token_type == TokenType::PUNCT && expr[i].data == "]"){
+							break;
+						}
+						tmpex.push_back(expr[i]);
+					}
+					tmpex.push_back(token{TokenType::OPERATOR, "+"});
+					tmpex.push_back(token{TokenType::OPERATOR, "@"});
+					eval(tmpex);
+				}
+			}
+			else if (expr[i].token_type == TokenType::OPERATOR) {
         int op = OPERATORS.find(expr[i].data);
         int oper0 = pop();
         int oper1 = 0;
         if (op < 8 || op > 10 && op != 15) {
           oper1 = pop();
+        }
+				if (get_var(expr[i].data)->type == VarType::STRING) {
+          if (!no_warn && !no_warn_string && (expr[i].data != "$" || expr[i].data != "@")) {
+            std::cout << "Warning: Performing operations on string does not "
+                         "modify!\n";
+          }
         }
         switch (op) {
         case 0: // add
@@ -1032,10 +1053,6 @@ public:
           break;
         case 14:
           push(oper0 == oper1);
-          break;
-        case 15:
-          push(oper0);
-          push(oper0);
           break;
         }
       }
@@ -1097,7 +1114,11 @@ public:
         }
         i--;
         eval(expr);
-      } else if (tokens[i].token_type == TokenType::KEYWORD) {
+      } 
+			else if(tokens[i].token_type == TokenType::STRING || tokens[i].token_type == TokenType::ARRAY){
+				push(strtab[tokens[i].data].pos);
+			}
+			else if (tokens[i].token_type == TokenType::KEYWORD) {
         if (tokens[i].data == "print") {
           if (i >= tokens.size()) {
             std::cout << "Error: builtin 'print' called at EOF!\n";
@@ -1163,7 +1184,17 @@ public:
           }
           vars[scope_num][tokens[++i].data] = new Variable{VarType::CHAR, sp};
           push(0);
-        } else if (tokens[i].data == "array") {
+        }
+				else if(tokens[i].data == "string"){
+					if (i + 1 > tokens.size()) {
+            std::cout
+                << "Error: Expected identifier when declaring variable!\n";
+            exit(-1);
+          }
+          vars[scope_num][tokens[++i].data] = new Variable{VarType::STRING, sp};
+          push(0);
+				}
+				else if (tokens[i].data == "array") {
           if (i + 2 > tokens.size() || i + 1 > tokens.size()) {
             std::cout
                 << "Error: Expected identifier when declaring variable!\n";
@@ -1179,7 +1210,24 @@ public:
               type = VarType::STRING;
             }
           }
-          vars[scope_num][tokens[++i].data] = new Variable{type | 0x80, sp++};
+          vars[scope_num][tokens[++i].data] = new Variable{type | 0x80, sp};
+					int ptr = 0;
+					if(tokens[i+1].token_type == TokenType::PUNCT){
+						i+=2;
+						if( i > tokens.size()){
+							std::cout << "Error: Expected expression at array initializer!\n";
+							exit(-1);
+						}
+						else{
+							vector<token> expr = vector<token>();
+							while(tokens[i].token_type != TokenType::PUNCT && tokens[i].data != "]"){
+								expr.push_back(tokens[i++]);
+							}
+							eval(expr);
+							ptr = alloc(pop()/alloc_size);
+						}
+					}
+					push(ptr);
         } else if (tokens[i].data == "sleep") {
           if (i >= tokens.size()) {
             std::cout << "Error: Sleep keyword without any time!\n";
@@ -1287,11 +1335,44 @@ public:
         } else if (tokens[i].data == "alloc") {
           i++;
           if (i > tokens.size()) {
-            std::cout << "Error: Builtin 'Alloc' expeceted 'Number', recieved "
+            std::cout << "Error: Builtin 'Alloc' expeceted 'Identifier' or 'Number', recieved "
                          "'EOF'\n";
             exit(-1);
           }
-        } else if (tokens[i].data == "open") {
+					if (tokens[i].token_type == TokenType::NUMBER){
+						int size = strtol(tokens[i].data.c_str(), NULL, 0);
+						push(alloc(size));
+					}
+					else if(tokens[i].token_type == TokenType::IDENTIFIER) {
+						push(alloc(heap[get_var(tokens[i].data)->stackPos]));
+					}
+					else{
+            std::cout << "Error: Builtin 'Alloc' expeceted 'Identifier' or 'Number', recieved "
+                         "'" << token_type_str[tokens[i].token_type] << "'\n";
+            exit(-1);
+					}
+        }
+				else if(tokens[i].data == "free"){
+					i++;
+					if (i > tokens.size()) {
+            std::cout << "Error: Builtin 'free' expeceted 'Identifier' or 'Number', recieved "
+                         "'EOF'\n";
+            exit(-1);
+          }
+					if (tokens[i].token_type == TokenType::NUMBER){
+						int size = strtol(tokens[i].data.c_str(), NULL, 0);
+						free(size);
+					}
+					else if(tokens[i].token_type == TokenType::IDENTIFIER) {
+						free(heap[get_var(tokens[i].data)->stackPos]);
+					}
+					else{
+            std::cout << "Error: Builtin 'Alloc' expeceted 'Identifier' or 'Number', recieved "
+                         "'" << token_type_str[tokens[i].token_type] << "'\n";
+            exit(-1);
+					}
+				}
+				else if (tokens[i].data == "open") {
           if (++i > tokens.size()) {
             std::cout << "Error: Not enough arguments in builtin \"open\""
                       << std::endl;

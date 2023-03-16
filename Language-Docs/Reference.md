@@ -9,10 +9,10 @@
 [1.4](#14-expressions) Expressions  
 [1.5](#15-keywords) Keywords  
 [1.5.1](#151-keyword-table) Keyword Table  
-[1.5.2](#152-variables) Variables
-[1.3](#13-your-first-program) Your first program
-[1.4](#14-expressions) Expressions
-[1.5](#15-keywords) Keywords
+[1.5.2](#152-variables) Variables  
+[1.3](#13-your-first-program) Your first program  
+[1.4](#14-expressions) Expressions  
+[1.5](#15-keywords) Keywords  
 ## 1.0: Getting Started
 
 Welcome to KNL! I'm so glad you decided to attempt to learn this awful, awful language.
@@ -275,7 +275,7 @@ things like `print` and `scan` are in this category. This is also probably the s
  void|Variable|Reserved
  var|Variable|Declare a number variable (64 bits)
  char|Variable|Declare a variable (8-bits)
- string|Variable|Reserved
+ string|Variable|Declare a variable that stores a string
  file|Variable|Declare a file variable (64-bit physical pointer);
  func|Variable|Reserved
  label|Variable|Mark a current place in the program to allow for easier `goto`s
@@ -287,15 +287,15 @@ things like `print` and `scan` are in this category. This is also probably the s
  read|IO|Reserved
  close|IO|Reserved
  if|Control|Execute if following statement, if none, then if top of stack is non-zero
- else|Control|Reserved
+ else|Control|Execute if the previous expression returned false
  for |Control|Reserved
  while|Control|Reserved
  goto|Control|Jump to a position according to the following value (label, variable, or number)
  end |Control|Decrease scope by one, and move stack frame back
  then|Control|Increase scope by one, and move stack frame forward
- array|Control|Reserved
+ array|Control|Declare a array variable, of the following type
  sleep|Control|Sleep for x ticks
- return|Control|Declare a array variable, of the following type
+ return|Control|Reserved
  call |Control|Reserved
 
 ### 1.5.2 Variables
@@ -328,12 +328,14 @@ print num1; //prints 21
 print num1; //prints 26
 ```
 
-For types, as of v0.1.0, there are 3 types of variables implemented 
+For types, as of v0.2.0, there are 5 types of variables implemented 
 (any keyword with Reserved under description has not been implemented)
 
 - Var
 - Char
 - Label
+- Strings
+- Arrays
 
 Vars are the most basic type of variable. They are simply a 64-bit number.
 They can be used for pointers, for storing data, or packed strings, if you wish
@@ -349,6 +351,39 @@ While labels are not required for program control, they make the whole thing exp
 variable type to be hoisted. You can get the value of a label the same way you can get the value of any other variable, but 
 the biggest difference, is that you can access `label` variables from anywhere in the program, no matter scope,
 or if it's before it's been declared. 
+
+Strings work exactly the same to how they work in C/C++. They are located in memory, and are null-terminated, meaning, all strings end
+with a `NUL`. In the builtin library, `array char`s and `string`s are handled exactly the same.
+Operations like `=`, `+` and `-`, and similar, do not work on the strings themselves,
+but rather the pointer. This is helpful for when you want to access part of a string just like an array, but be sure to preserve the pointer.
+While OB accesses 9 times out of 10 will fine due to the purposeful over-allocation, and will not cause a segfault,
+you could end up overwriting other data. 
+
+Arrays are similar to strings, in that in the declaration of arrays, you are declaring a pointer to a pre-allocated segment in memory which has already
+copied over the array. If your program has heavy use of array declarations or strings, then you would see a noticable increase in
+pre-processing time, before actually executing your program, as the preprocessor is copying over all the arrays and strings into the
+virtual memory preallocated by the interpreter, either at 8MB or the desired amount specified using `#allocate` or `./knl -m`.  
+Array accesses are similar to accessing any other variable, but with small difference.
+When accessing a normal variable, you use the expression `variable @` to get the data that the variable stores. But to get the data stored in an array, you just add the offset, then the next reader - `@`
+Example:
+```
+array var foo;
+{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}
+foo $; // set foo to an array of length 10
+print foo // will output some random number like 5259xx
+foo @ 5 +@;print; // will output the 6th element of foo - 5
+```
+C equivalent:
+```c
+int foo[] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
+int main(){
+	printf("%d", foo[5]);
+}
+```
+To make things easier on you, the programmer, Sometime in the near future array subscripts using brackets will be added,
+to make array access more removed from pointers, but from 0.2.0 until they are added, arrays are exactly the same as C pointers and should be used
+like such.
+
 
 While it's generally not recommended, you can do whats called "shadowing".
 Essentially, you declare a variable in a higher scope, of the same name as 
@@ -381,4 +416,5 @@ vector<string> keywords = {
     "return", // 20
     "call",   // 21
 };
--->
+
+hehe nice-->
