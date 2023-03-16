@@ -16,10 +16,10 @@
 #define GETNAME(a) #a
 
 #ifndef DEBUG
-#define VERSION "KNL v0.2.0-alpha"
+#define VERSION "KNL v0.2.1-alpha"
 #define DEBUG 0
 #else
-#define VERSION "KNL v0.2.0-debug_alpha"
+#define VERSION "KNL v0.2.1-debug_alpha"
 #endif
 
 using std::fstream;
