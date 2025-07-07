@@ -2,11 +2,11 @@
 
 ## What it is
 
-KNL (KiminoLang) is a functional, weakly-typed, interpereted language, designed for the [HorizonOS](https://github.com/notsomeidiot123/horizon-os) Operating System. the token interpreter is easy enough to port, with the hardest part to port being the Lexical Analyzer. 
+KNL (KiminoLang) is a functional, weakly-typed, interpereted language.
 
 The language has a pretty small spec, as it's meant to be a BASIC-like programming language, just more powerful, and significantly faster. Almost like the ViM of shell languages, however, depending on it's enviornment, the language should behave slightly differently
 
-The four "Operating modes" are as follows:
+The three "Operating modes" are as follows:
 
 * Shell: Behave similar to bash, execute things on a input line-by-line basis, instead of reading from file. 
 * Shell Script: Exactly the same as Shell, but read from a file. This must be specifed by the directive `#shell`, however it must be a trimmed-down version of the language itself. features such as Stdlib, `#includes` and functions are not present, as to allow for faster execution, but allows for labels to be defined, just like you normally can
